@@ -34,9 +34,10 @@ URLS = {
     "general": "https://www.data.gouv.fr/fr/datasets/r/ff16d511-10c0-405e-9b35-511723948fce",
     # Base officielle des codes postaux (CSV)
     "codes_postaux": "https://www.data.gouv.fr/fr/datasets/r/008a2dda-2c60-4b63-b910-998f6f818089",
-    # Communes géolocalisées (CSV)
-    "communes_gps": "https://www.data.gouv.fr/fr/datasets/r/ee67c978-3d35-4fa9-a1fc-df87fda4c83d",
 }
+
+# Fichier local des communes avec GPS (ville.xls)
+VILLE_XLS = DATA_DIR / "raw" / "ville.xls"
 
 # Élections municipales à extraire
 MUNICIPAL_ELECTIONS = [
@@ -139,9 +140,15 @@ def step_download() -> dict[str, Path]:
     files["codes_postaux"] = download_file(
         URLS["codes_postaux"], RAW_DIR / "codes_postaux.csv", "Codes postaux"
     )
-    files["communes_gps"] = download_file(
-        URLS["communes_gps"], RAW_DIR / "communes_gps.csv", "Communes GPS"
-    )
+
+    # Vérifier que ville.xls est présent localement
+    if not VILLE_XLS.exists():
+        print(f"\n  ⚠️  Fichier manquant : {VILLE_XLS}")
+        print(f"  Copiez ville.xls dans {RAW_DIR}/")
+        sys.exit(1)
+    else:
+        print(f"  [local] ville.xls → {VILLE_XLS.name}")
+
     return files
 
 
@@ -247,121 +254,39 @@ def step_aggregate(df_cand: pd.DataFrame, nuances: dict) -> pd.DataFrame:
 
 # --- Étape 4 : Enrichissement géographique -----------------------------------
 
-def step_enrich_geo(files: dict[str, Path]) -> pd.DataFrame:
+def step_enrich_geo() -> pd.DataFrame:
     print("\n=== Étape 4 : Enrichissement géographique ===")
 
-    # Codes postaux
-    try:
-        df_cp = pd.read_csv(files["codes_postaux"], sep=";", dtype=str)
-    except Exception:
-        df_cp = pd.read_csv(files["codes_postaux"], sep=",", dtype=str)
+    # Lecture de ville.xls (fichier local)
+    print("  Lecture ville.xls …")
+    df_ville = pd.read_excel(VILLE_XLS)
 
-    # Identifier les colonnes
-    cp_cols = df_cp.columns.tolist()
-    print(f"  Codes postaux — colonnes : {cp_cols}")
+    # Nettoyer les noms de colonnes (espaces en trop)
+    df_ville.columns = df_ville.columns.str.strip()
 
-    # Chercher les colonnes code_insee et code_postal
-    col_insee_cp = None
-    col_cp = None
-    col_nom_cp = None
-    for c in cp_cols:
-        cl = c.lower().strip()
-        if "insee" in cl or cl == "code_commune_insee":
-            col_insee_cp = c
-        if "postal" in cl or cl == "code_postal":
-            col_cp = c
-        if "nom" in cl and "commune" in cl:
-            col_nom_cp = c
+    print(f"  → {len(df_ville):,} villes chargées")
+    print(f"  Colonnes : {df_ville.columns.tolist()}")
 
-    if col_insee_cp and col_cp:
-        df_cp = df_cp[[col_insee_cp, col_cp]].drop_duplicates()
-        if col_nom_cp:
-            df_cp_names = pd.read_csv(files["codes_postaux"], sep=";", dtype=str)
-            df_cp_names = df_cp_names[[col_insee_cp, col_nom_cp]].drop_duplicates()
-        # Garder le premier code postal par commune
-        df_cp = df_cp.groupby(col_insee_cp).first().reset_index()
-        df_cp = df_cp.rename(columns={col_insee_cp: "code_insee", col_cp: "code_postal"})
-    else:
-        print(f"  ⚠️  Colonnes codes postaux non identifiées, fallback")
-        df_cp = pd.DataFrame(columns=["code_insee", "code_postal"])
+    # Renommer les colonnes
+    df_geo = df_ville.rename(columns={
+        "Code INSEE": "code_insee",
+        "Nom Ville": "nom_commune",
+        "Code Postal": "code_postal",
+        "Latitude": "lat",
+        "Longitude": "lng",
+    })
 
-    # GPS
-    try:
-        df_gps = pd.read_csv(files["communes_gps"], sep=",", dtype=str, low_memory=False)
-    except Exception:
-        df_gps = pd.read_csv(files["communes_gps"], sep=";", dtype=str, low_memory=False)
+    # Nettoyer les valeurs
+    df_geo["code_insee"] = df_geo["code_insee"].astype(str).str.strip()
+    df_geo["code_postal"] = df_geo["code_postal"].astype(str).str.strip().str.zfill(5)
+    df_geo["nom_commune"] = df_geo["nom_commune"].astype(str).str.strip()
+    df_geo["lat"] = pd.to_numeric(df_geo["lat"], errors="coerce")
+    df_geo["lng"] = pd.to_numeric(df_geo["lng"], errors="coerce")
 
-    gps_cols = df_gps.columns.tolist()
-    print(f"  Communes GPS — colonnes : {gps_cols}")
+    # Garder uniquement les colonnes utiles, dédupliquer par code_insee
+    df_geo = df_geo[["code_insee", "nom_commune", "code_postal", "lat", "lng"]]
+    df_geo = df_geo.drop_duplicates(subset=["code_insee"])
 
-    col_insee_gps = None
-    col_nom_gps = None
-    col_lat = None
-    col_lng = None
-    col_pop = None
-
-    for c in gps_cols:
-        cl = c.lower().strip()
-        if "insee" in cl or cl == "code_commune_insee" or cl == "insee_com":
-            col_insee_gps = c
-        if cl in ("latitude", "lat"):
-            col_lat = c
-        if cl in ("longitude", "lng", "lon", "long"):
-            col_lng = c
-        if "nom" in cl and ("commune" in cl or cl == "nom_commune"):
-            col_nom_gps = c
-        if cl in ("population", "pop"):
-            col_pop = c
-
-    # Fallback: chercher des colonnes avec "code" au début
-    if not col_insee_gps:
-        for c in gps_cols:
-            if c.lower().startswith("code") and "postal" not in c.lower():
-                col_insee_gps = c
-                break
-
-    if not col_lat:
-        for c in gps_cols:
-            if "lat" in c.lower():
-                col_lat = c
-                break
-
-    if not col_lng:
-        for c in gps_cols:
-            if "lon" in c.lower() or "lng" in c.lower():
-                col_lng = c
-                break
-
-    keep_cols = []
-    rename_map = {}
-    if col_insee_gps:
-        keep_cols.append(col_insee_gps)
-        rename_map[col_insee_gps] = "code_insee"
-    if col_nom_gps:
-        keep_cols.append(col_nom_gps)
-        rename_map[col_nom_gps] = "nom_commune"
-    if col_lat:
-        keep_cols.append(col_lat)
-        rename_map[col_lat] = "lat"
-    if col_lng:
-        keep_cols.append(col_lng)
-        rename_map[col_lng] = "lng"
-    if col_pop:
-        keep_cols.append(col_pop)
-        rename_map[col_pop] = "population"
-
-    df_gps = df_gps[keep_cols].rename(columns=rename_map).drop_duplicates(subset=["code_insee"])
-
-    # Convertir lat/lng en float
-    for col in ["lat", "lng"]:
-        if col in df_gps.columns:
-            df_gps[col] = pd.to_numeric(df_gps[col], errors="coerce")
-
-    if "population" in df_gps.columns:
-        df_gps["population"] = pd.to_numeric(df_gps["population"], errors="coerce").fillna(0).astype(int)
-
-    # Merge GPS + codes postaux
-    df_geo = df_gps.merge(df_cp, on="code_insee", how="left")
     print(f"  → {len(df_geo):,} communes géoréférencées")
 
     return df_geo
@@ -516,7 +441,7 @@ def main():
     agg, gagnants = step_aggregate(df_cand, nuances)
 
     # Étape 4 : Enrichissement géographique
-    df_geo = step_enrich_geo(files)
+    df_geo = step_enrich_geo()
 
     # Étape 5 : Noms de communes
     df_names = step_commune_names(df_gen)
