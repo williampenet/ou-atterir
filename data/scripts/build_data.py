@@ -28,10 +28,14 @@ OUTPUT_DIR = DATA_DIR / "output"
 
 # URLs des fichiers à télécharger (data.gouv.fr)
 URLS = {
-    "candidats": "https://www.data.gouv.fr/fr/datasets/r/a1d5a44a-e923-4402-8b6a-95d89b7e2bae",
-    "general": "https://www.data.gouv.fr/fr/datasets/r/3ec906a0-4115-4396-a2c9-943931e902cc",
-    "codes_postaux": "https://www.data.gouv.fr/fr/datasets/r/09ac8a44-4dab-4e44-a8b8-3e533104da08",
-    "communes_gps": "https://www.data.gouv.fr/fr/datasets/r/dbe8a621-a9c4-4bc3-9cae-be1699c5ff25",
+    # Résultats par candidats (Parquet) — dataset élections agrégées
+    "candidats": "https://www.data.gouv.fr/fr/datasets/r/4d3b35f6-0b22-4415-a24c-419a676312e2",
+    # Résultats généraux (Parquet) — même dataset
+    "general": "https://www.data.gouv.fr/fr/datasets/r/ff16d511-10c0-405e-9b35-511723948fce",
+    # Base officielle des codes postaux (CSV)
+    "codes_postaux": "https://www.data.gouv.fr/fr/datasets/r/008a2dda-2c60-4b63-b910-998f6f818089",
+    # Communes géolocalisées (CSV)
+    "communes_gps": "https://www.data.gouv.fr/fr/datasets/r/ee67c978-3d35-4fa9-a1fc-df87fda4c83d",
 }
 
 # Élections municipales à extraire
