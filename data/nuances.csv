@@ -1,0 +1,86 @@
+code_nuance,famille,couleur_hex
+EXG,Extrême gauche,#8B0000
+DXG,Extrême gauche,#8B0000
+LEXG,Extrême gauche,#8B0000
+COM,Gauche,#DD0000
+PG,Gauche,#DD0000
+SOC,Gauche,#FF6699
+RDG,Gauche,#FFB6C1
+DVG,Gauche,#FFC0CB
+FG,Gauche,#CC0000
+FI,Gauche,#CC2443
+LFI,Gauche,#CC2443
+NUP,Gauche,#7B2D8E
+LCOM,Gauche,#DD0000
+LSOC,Gauche,#FF6699
+LDVG,Gauche,#FFC0CB
+LFG,Gauche,#CC0000
+LPG,Gauche,#DD0000
+LUG,Gauche,#FF6699
+LCOP,Gauche,#DD0000
+LRDG,Gauche,#FFB6C1
+VEC,Écologiste,#00A550
+ECO,Écologiste,#00A550
+LVEC,Écologiste,#00A550
+LECO,Écologiste,#00A550
+LVEG,Écologiste,#00A550
+MODM,Centre,#FF9900
+MDM,Centre,#FF9900
+UDI,Centre,#00BFFF
+CEN,Centre,#FF9900
+ALLI,Centre,#FF9900
+PRV,Centre,#FF9900
+NCE,Centre,#FF9900
+REM,Centre,#FFEB00
+ENS,Centre,#FFEB00
+DVC,Centre,#FAC577
+LCMD,Centre,#FF9900
+LMDM,Centre,#FF9900
+LUC,Centre,#FF9900
+LUDI,Centre,#00BFFF
+LREM,Centre,#FFEB00
+LDVC,Centre,#FAC577
+LCEN,Centre,#FF9900
+LMMD,Centre,#FF9900
+LMP,Centre,#FF9900
+LGCE,Centre,#FF9900
+LUCG,Centre,#FF9900
+UMP,Droite,#0066CC
+LR,Droite,#0066CC
+DVD,Droite,#4682B4
+MAJ,Droite,#0066CC
+MPF,Droite,#0066CC
+M-NC,Droite,#0066CC
+M,Droite,#0066CC
+CPNT,Droite,#007040
+DLR,Droite,#0066CC
+LUMP,Droite,#0066CC
+LDVD,Droite,#4682B4
+LUD,Droite,#0066CC
+LMAJ,Droite,#0066CC
+LLR,Droite,#0066CC
+LUCD,Droite,#0066CC
+LDLR,Droite,#0066CC
+LMC,Droite,#0066CC
+FN,Extrême droite,#0D0D54
+RN,Extrême droite,#0D0D54
+EXD,Extrême droite,#404040
+DLF,Extrême droite,#8B4513
+DSV,Extrême droite,#404040
+REC,Extrême droite,#404040
+DXD,Extrême droite,#404040
+LFN,Extrême droite,#0D0D54
+LEXD,Extrême droite,#404040
+LDSV,Extrême droite,#404040
+LRN,Extrême droite,#0D0D54
+LDLF,Extrême droite,#8B4513
+LUXD,Extrême droite,#404040
+DIV,Divers,#999999
+AUT,Divers,#999999
+REG,Divers,#999999
+LDIV,Divers,#999999
+LAUT,Divers,#999999
+LREG,Divers,#999999
+LNC,Divers,#999999
+LGJ,Divers,#999999
+UDFM,Divers,#999999
