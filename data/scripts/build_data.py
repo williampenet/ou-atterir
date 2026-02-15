@@ -121,8 +121,8 @@ def load_nuances_mapping() -> dict[str, dict]:
 
 def build_code_insee(row) -> str:
     """Construit le code INSEE 5 caractères à partir de département + commune."""
-    dep = str(row["Code du département"]).strip()
-    com = str(row["Code de la commune"]).strip().zfill(3)
+    dep = str(row["code_departement"]).strip()
+    com = str(row["code_commune"]).strip().zfill(3)
     return dep + com
 
 
@@ -183,7 +183,7 @@ def step_aggregate(df_cand: pd.DataFrame, nuances: dict) -> pd.DataFrame:
     df_cand["code_insee"] = df_cand.apply(build_code_insee, axis=1)
 
     # Mapper les nuances vers les familles
-    df_cand["famille"] = df_cand["Nuance"].map(lambda n: nuances.get(n, {}).get("famille", "divers"))
+    df_cand["famille"] = df_cand["nuance"].map(lambda n: nuances.get(n, {}).get("famille", "divers"))
 
     # Pour chaque (code_insee, id_election), on prend seulement le T2 si disponible, sinon T1
     # Logique : s'il y a un T2, c'est le résultat final
@@ -216,7 +216,7 @@ def step_aggregate(df_cand: pd.DataFrame, nuances: dict) -> pd.DataFrame:
     agg = (
         df_filtered
         .groupby(["code_insee", "annee", "famille"])
-        .agg(voix=("Voix", "sum"))
+        .agg(voix=("voix", "sum"))
         .reset_index()
     )
 
@@ -230,21 +230,21 @@ def step_aggregate(df_cand: pd.DataFrame, nuances: dict) -> pd.DataFrame:
     # Aussi récupérer le gagnant (liste/candidat avec le plus de voix par commune/année)
     idx_gagnants = (
         df_filtered
-        .groupby(["code_insee", "annee"])["Voix"]
+        .groupby(["code_insee", "annee"])["voix"]
         .idxmax()
     )
     gagnants = df_filtered.loc[idx_gagnants, [
-        "code_insee", "annee", "Nuance", "famille",
-        "Libellé Abrégé Liste", "Libellé Etendu Liste",
-        "Nom Tête de Liste", "Nom", "Prénom", "% Voix/Exp"
+        "code_insee", "annee", "nuance", "famille",
+        "libelle_abrege_liste", "libelle_etendu_liste",
+        "nom_tete_liste", "nom", "prenom", "ratio_voix_exprimes"
     ]].copy()
     gagnants = gagnants.rename(columns={
-        "Nuance": "nuance_gagnant",
+        "nuance": "nuance_gagnant",
         "famille": "famille_gagnant",
-        "Libellé Abrégé Liste": "liste_abregee",
-        "Libellé Etendu Liste": "liste_etendue",
-        "Nom Tête de Liste": "tete_de_liste",
-        "% Voix/Exp": "pct_gagnant",
+        "libelle_abrege_liste": "liste_abregee",
+        "libelle_etendu_liste": "liste_etendue",
+        "nom_tete_liste": "tete_de_liste",
+        "ratio_voix_exprimes": "pct_gagnant",
     })
 
     print(f"  → {len(agg['code_insee'].unique()):,} communes identifiées")
@@ -377,12 +377,15 @@ def step_build_json(
             gagnant_info = {}
             if len(year_gagnant) > 0:
                 g = year_gagnant.iloc[0]
+                pct_raw = g.get("pct_gagnant", 0)
+                # ratio_voix_exprimes est entre 0 et 1, convertir en %
+                pct_val = round(float(pct_raw) * 100, 1) if pd.notna(pct_raw) else 0
                 gagnant_info = {
                     "nuance": g.get("nuance_gagnant", ""),
                     "famille": FAMILLE_LABELS.get(g.get("famille_gagnant", "divers"), "Divers"),
-                    "pct_exprimes": round(float(g.get("pct_gagnant", 0)), 1) if pd.notna(g.get("pct_gagnant")) else 0,
+                    "pct_exprimes": pct_val,
                     "liste": g.get("liste_etendue", "") or g.get("liste_abregee", ""),
-                    "tete_de_liste": g.get("tete_de_liste", "") or f"{g.get('Prénom', '')} {g.get('Nom', '')}".strip(),
+                    "tete_de_liste": g.get("tete_de_liste", "") or f"{g.get('prenom', '')} {g.get('nom', '')}".strip(),
                 }
                 tendance_history.append(g.get("famille_gagnant", "divers"))
 
