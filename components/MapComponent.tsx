@@ -20,10 +20,17 @@ interface Props {
   center: [number, number];
   communes: Commune[];
   selectedId?: string;
+  isVisible?: boolean;
 }
 
-const MapComponent: React.FC<Props> = ({ center, communes, selectedId }) => {
+const MapComponent: React.FC<Props> = ({ center, communes, selectedId, isVisible }) => {
   const [map, setMap] = useState<L.Map | null>(null);
+
+  useEffect(() => {
+    if (map) {
+      setTimeout(() => map.invalidateSize(), 100);
+    }
+  }, [map, isVisible]);
 
   useEffect(() => {
     if (map) {

@@ -128,6 +128,7 @@ const App: React.FC = () => {
                 center={selectedCommune ? selectedCommune.coordinates : [46.603354, 1.888334]} // France center default
                 communes={nearbyCommunes}
                 selectedId={selectedCommune?.insee}
+                isVisible={viewMode === 'map'}
              />
              
              {/* Map Overlay Stats (Optional) */}
