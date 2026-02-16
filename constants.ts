@@ -1,4 +1,4 @@
-import { PoliticalNuance, StabilityLevel } from './types';
+import { PoliticalNuance, PoliticalBloc, StabilityLevel } from './types';
 
 export const NUANCE_COLORS: Record<PoliticalNuance, string> = {
   [PoliticalNuance.EXG]: '#b91c1c', // Red 700
@@ -16,6 +16,13 @@ export const STABILITY_COLORS: Record<StabilityLevel, string> = {
   [StabilityLevel.STABLE]: 'bg-blue-100 text-blue-800 border-blue-200',
   [StabilityLevel.SWING]: 'bg-orange-100 text-orange-800 border-orange-200',
   [StabilityLevel.UNSTABLE]: 'bg-red-100 text-red-800 border-red-200',
+};
+
+export const BLOC_COLORS: Record<PoliticalBloc, string> = {
+  [PoliticalBloc.GAUCHE]: '#ec4899',
+  [PoliticalBloc.CENTRE]: '#f59e0b',
+  [PoliticalBloc.DROITE]: '#2563eb',
+  [PoliticalBloc.EXTREME_DROITE]: '#1e1b4b',
 };
 
 // Map nuance to a numeric value for charting (1 = Far Left, 7 = Far Right)

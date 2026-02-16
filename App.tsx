@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Map as MapIcon, BarChart2, Info } from 'lucide-react';
+import { Search, Map as MapIcon, BarChart2, Info, Compass } from 'lucide-react';
 import { searchCommune, getNearbyCommunes } from './services/communeService';
-import { Commune } from './types';
+import { Commune, IdealResult } from './types';
 import CommuneCard from './components/CommuneCard';
 import MapComponent from './components/MapComponent';
+import IdealSearchForm from './components/IdealSearchForm';
+import IdealResultsList from './components/IdealResultsList';
 
 const App: React.FC = () => {
   const [searchZip, setSearchZip] = useState('');
@@ -12,6 +14,8 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [viewMode, setViewMode] = useState<'card' | 'map'>('card'); // Mobile toggle
+  const [searchMode, setSearchMode] = useState<'zipcode' | 'ideal'>('zipcode');
+  const [idealResults, setIdealResults] = useState<IdealResult[] | null>(null);
 
   // Load nearby data on mount (mocking "Find towns around me" or generic load)
   useEffect(() => {
@@ -67,58 +71,122 @@ const App: React.FC = () => {
         {/* Left Column: Search & Card */}
         <section className={`flex-col gap-6 w-full lg:w-1/3 lg:min-w-[400px] ${viewMode === 'map' ? 'hidden lg:flex' : 'flex'}`}>
             
-            {/* Search Box */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <h2 className="text-lg font-bold text-slate-800 mb-2">Où souhaitez-vous habiter ?</h2>
-                <p className="text-slate-500 text-sm mb-4">Analysez l'histoire politique de votre future commune.</p>
-                
-                <form onSubmit={handleSearch} className="relative">
-                    <input 
-                        type="text" 
-                        placeholder="Code postal (ex: 69001)"
-                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all font-medium text-slate-800 placeholder:text-slate-400"
-                        value={searchZip}
-                        onChange={(e) => setSearchZip(e.target.value)}
-                        maxLength={5}
-                        inputMode="numeric"
-                    />
-                    <Search className="absolute left-4 top-3.5 text-slate-400 w-5 h-5" />
-                    <button 
-                        type="submit"
-                        className="absolute right-2 top-2 bg-indigo-600 hover:bg-indigo-700 text-white p-1.5 rounded-lg transition-colors"
-                    >
-                        <Search className="w-4 h-4" />
-                    </button>
-                </form>
-                {error && <p className="text-red-500 text-xs mt-2 font-medium bg-red-50 p-2 rounded-lg">{error}</p>}
-                
-                <div className="mt-4 flex flex-wrap gap-2">
-                   <p className="text-xs text-slate-400 w-full mb-1">Essayer:</p>
-                   {['69001', '33000', '62110', '92200', '75016'].map(zip => (
-                       <button 
-                        key={zip} 
-                        onClick={() => {setSearchZip(zip);}} 
-                        className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-1 rounded transition-colors"
-                       >
-                           {zip}
-                       </button>
-                   ))}
-                </div>
+            {/* Mode Toggle */}
+            <div className="flex bg-white rounded-xl border border-slate-200 p-1 shadow-sm">
+              <button
+                onClick={() => { setSearchMode('zipcode'); setIdealResults(null); }}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-semibold rounded-lg transition-all ${searchMode === 'zipcode' ? 'bg-indigo-600 text-white shadow' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                <Search className="w-3.5 h-3.5" /> Code postal
+              </button>
+              <button
+                onClick={() => { setSearchMode('ideal'); setSelectedCommune(null); }}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-semibold rounded-lg transition-all ${searchMode === 'ideal' ? 'bg-indigo-600 text-white shadow' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                <Compass className="w-3.5 h-3.5" /> Commune idéale
+              </button>
             </div>
 
-            {/* Results Area */}
-            {loading ? (
-                <div className="flex flex-col items-center justify-center py-20 bg-white/50 rounded-2xl border border-dashed border-slate-300">
-                    <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
-                    <p className="text-slate-500 text-sm font-medium">Recherche des données électorales...</p>
+            {searchMode === 'zipcode' ? (
+              <>
+                {/* Search Box */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 className="text-lg font-bold text-slate-800 mb-2">Où souhaitez-vous habiter ?</h2>
+                    <p className="text-slate-500 text-sm mb-4">Analysez l'histoire politique de votre future commune.</p>
+                    
+                    <form onSubmit={handleSearch} className="relative">
+                        <input 
+                            type="text" 
+                            placeholder="Code postal (ex: 69001)"
+                            className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all font-medium text-slate-800 placeholder:text-slate-400"
+                            value={searchZip}
+                            onChange={(e) => setSearchZip(e.target.value)}
+                            maxLength={5}
+                            inputMode="numeric"
+                        />
+                        <Search className="absolute left-4 top-3.5 text-slate-400 w-5 h-5" />
+                        <button 
+                            type="submit"
+                            className="absolute right-2 top-2 bg-indigo-600 hover:bg-indigo-700 text-white p-1.5 rounded-lg transition-colors"
+                        >
+                            <Search className="w-4 h-4" />
+                        </button>
+                    </form>
+                    {error && <p className="text-red-500 text-xs mt-2 font-medium bg-red-50 p-2 rounded-lg">{error}</p>}
+                    
+                    <div className="mt-4 flex flex-wrap gap-2">
+                       <p className="text-xs text-slate-400 w-full mb-1">Essayer:</p>
+                       {['69001', '33000', '62110', '92200', '75016'].map(zip => (
+                           <button 
+                            key={zip} 
+                            onClick={() => {setSearchZip(zip);}} 
+                            className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-1 rounded transition-colors"
+                           >
+                               {zip}
+                           </button>
+                       ))}
+                    </div>
                 </div>
-            ) : selectedCommune ? (
-                <CommuneCard commune={selectedCommune} />
+
+                {/* Results Area */}
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-20 bg-white/50 rounded-2xl border border-dashed border-slate-300">
+                        <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+                        <p className="text-slate-500 text-sm font-medium">Recherche des données électorales...</p>
+                    </div>
+                ) : selectedCommune ? (
+                    <CommuneCard commune={selectedCommune} />
+                ) : (
+                    <div className="flex flex-col items-center justify-center py-12 px-6 text-center bg-white rounded-2xl border border-slate-200 shadow-sm opacity-60">
+                        <BarChart2 className="w-12 h-12 text-slate-300 mb-3" />
+                        <p className="text-slate-400 text-sm">Entrez un code postal pour voir l'historique politique et le score de stabilité.</p>
+                    </div>
+                )}
+              </>
             ) : (
-                <div className="flex flex-col items-center justify-center py-12 px-6 text-center bg-white rounded-2xl border border-slate-200 shadow-sm opacity-60">
-                    <BarChart2 className="w-12 h-12 text-slate-300 mb-3" />
-                    <p className="text-slate-400 text-sm">Entrez un code postal pour voir l'historique politique et le score de stabilité.</p>
-                </div>
+              <>
+                <IdealSearchForm
+                  onResults={(results) => {
+                    setIdealResults(results);
+                    setSelectedCommune(null);
+                    if (results.length > 0) {
+                      setNearbyCommunes(results.map(r => r.commune));
+                    }
+                  }}
+                  onLoading={setLoading}
+                />
+
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-20 bg-white/50 rounded-2xl border border-dashed border-slate-300">
+                        <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+                        <p className="text-slate-500 text-sm font-medium">Recherche en cours...</p>
+                    </div>
+                ) : idealResults !== null ? (
+                    idealResults.length > 0 ? (
+                      <IdealResultsList
+                        results={idealResults}
+                        onSelectCommune={(commune) => {
+                          setSelectedCommune(commune);
+                          setViewMode('map');
+                        }}
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-12 px-6 text-center bg-white rounded-2xl border border-slate-200 shadow-sm opacity-60">
+                        <Compass className="w-12 h-12 text-slate-300 mb-3" />
+                        <p className="text-slate-400 text-sm">Aucune commune ne correspond à ces critères dans ce département.</p>
+                      </div>
+                    )
+                ) : (
+                    <div className="flex flex-col items-center justify-center py-12 px-6 text-center bg-white rounded-2xl border border-slate-200 shadow-sm opacity-60">
+                        <Compass className="w-12 h-12 text-slate-300 mb-3" />
+                        <p className="text-slate-400 text-sm">Décrivez votre commune idéale pour lancer la recherche.</p>
+                    </div>
+                )}
+
+                {selectedCommune && idealResults && (
+                  <CommuneCard commune={selectedCommune} />
+                )}
+              </>
             )}
         </section>
 

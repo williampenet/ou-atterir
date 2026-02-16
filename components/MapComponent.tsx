@@ -28,7 +28,10 @@ const MapComponent: React.FC<Props> = ({ center, communes, selectedId, isVisible
 
   useEffect(() => {
     if (map) {
+      // Multiple invalidations to handle CSS transitions and layout reflows
+      map.invalidateSize();
       setTimeout(() => map.invalidateSize(), 100);
+      setTimeout(() => map.invalidateSize(), 300);
     }
   }, [map, isVisible]);
 

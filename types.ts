@@ -35,6 +35,27 @@ export interface Commune {
   currentMayor: string;
 }
 
+export enum PoliticalBloc {
+  GAUCHE = 'Gauche',
+  CENTRE = 'Centre',
+  DROITE = 'Droite',
+  EXTREME_DROITE = 'Extrême-droite',
+}
+
+export const BLOC_NUANCES: Record<PoliticalBloc, PoliticalNuance[]> = {
+  [PoliticalBloc.GAUCHE]: [PoliticalNuance.EXG, PoliticalNuance.G, PoliticalNuance.CG],
+  [PoliticalBloc.CENTRE]: [PoliticalNuance.C],
+  [PoliticalBloc.DROITE]: [PoliticalNuance.CD, PoliticalNuance.D],
+  [PoliticalBloc.EXTREME_DROITE]: [PoliticalNuance.EXD],
+};
+
+export type MatchLevel = 'forteresse' | 'tendance';
+
+export interface IdealResult {
+  commune: Commune;
+  matchLevel: MatchLevel;
+}
+
 export interface SearchFilters {
   trend?: PoliticalNuance;
   stableOnly?: boolean;
