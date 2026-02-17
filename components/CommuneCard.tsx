@@ -66,8 +66,7 @@ const CommuneCard: React.FC<Props> = ({ commune, loading }) => {
                   <span className="text-sm font-bold text-slate-700 w-12">{election.year}</span>
                   <div className="h-3 w-3 rounded-full mr-3 flex-shrink-0" style={{ backgroundColor: getBlocColor(election.winnerBloc) }} />
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium text-slate-800">{election.winnerName}</span>
-                    <span className="text-[10px] text-slate-500">{election.winnerNuanceLabel} · {election.winnerBloc}</span>
+                    <span className="text-sm font-medium text-slate-800">{election.winnerName} <span className="text-slate-400 font-normal">({election.winnerNuanceLabel})</span></span>
                   </div>
                 </div>
                 <div className="text-right">

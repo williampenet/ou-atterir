@@ -103,8 +103,7 @@ const ResultCard: React.FC<{ result: IdealResult; isSelected: boolean; onClick: 
         <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
           <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: blocColor }} />
           <span>
-            {latestWinner} ({latestYear}) — {latestScore}%
-            {latestNuanceLabel && <span className="text-slate-400 ml-1">· {latestNuanceLabel}</span>}
+            {latestWinner}{latestNuanceLabel ? ` (${latestNuanceLabel})` : ''} — {latestYear} — {latestScore}%
           </span>
         </div>
       )}
