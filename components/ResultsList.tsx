@@ -1,6 +1,6 @@
 import React from 'react';
 import { IdealResult, PaginatedResults } from '../types';
-import { NUANCE_COLORS } from '../constants';
+import { BLOC_COLORS } from '../constants';
 import { MapPin, Shield, TrendingUp, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Props {
@@ -69,20 +69,9 @@ const ResultsList: React.FC<Props> = ({ results, onSelectCommune, selectedInsee,
 };
 
 const ResultCard: React.FC<{ result: IdealResult; isSelected: boolean; onClick: () => void }> = ({ result, isSelected, onClick }) => {
-  const { commune, matchLevel, latestNuance, latestWinner, latestYear, latestScore } = result;
+  const { commune, matchLevel, latestNuanceLabel, latestBloc, latestWinner, latestYear, latestScore } = result;
 
-  const displayNuance = latestNuance ?? (commune.history.length > 0
-    ? commune.history.reduce((prev, cur) => (cur.year > prev.year ? cur : prev)).winnerNuance
-    : null);
-  const displayWinner = latestWinner ?? (commune.history.length > 0
-    ? commune.history.reduce((prev, cur) => (cur.year > prev.year ? cur : prev)).winnerName
-    : null);
-  const displayYear = latestYear ?? (commune.history.length > 0
-    ? commune.history.reduce((prev, cur) => (cur.year > prev.year ? cur : prev)).year
-    : null);
-  const displayScore = latestScore ?? (commune.history.length > 0
-    ? commune.history.reduce((prev, cur) => (cur.year > prev.year ? cur : prev)).score
-    : null);
+  const blocColor = latestBloc ? (BLOC_COLORS[latestBloc] || '#94a3b8') : '#94a3b8';
 
   return (
     <button
@@ -101,21 +90,22 @@ const ResultCard: React.FC<{ result: IdealResult; isSelected: boolean; onClick: 
           </div>
           <h3 className="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">{commune.name}</h3>
         </div>
-        {matchLevel !== 'tendance' || latestNuance ? (
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 ${
-            matchLevel === 'forteresse'
-              ? 'bg-emerald-100 text-emerald-700'
-              : 'bg-amber-100 text-amber-700'
-          }`}>
-            {matchLevel === 'forteresse' ? <Shield className="w-2.5 h-2.5" /> : <TrendingUp className="w-2.5 h-2.5" />}
-            {matchLevel === 'forteresse' ? 'Forteresse' : 'Tendance'}
-          </span>
-        ) : null}
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 ${
+          matchLevel === 'forteresse'
+            ? 'bg-emerald-100 text-emerald-700'
+            : 'bg-amber-100 text-amber-700'
+        }`}>
+          {matchLevel === 'forteresse' ? <Shield className="w-2.5 h-2.5" /> : <TrendingUp className="w-2.5 h-2.5" />}
+          {matchLevel === 'forteresse' ? 'Forteresse' : 'Tendance'}
+        </span>
       </div>
-      {displayNuance && displayWinner && displayYear != null && displayScore != null && (
+      {latestWinner && latestYear != null && latestScore != null && (
         <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
-          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: NUANCE_COLORS[displayNuance] }} />
-          <span>{displayWinner} ({displayYear}) — {displayScore}%</span>
+          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: blocColor }} />
+          <span>
+            {latestWinner} ({latestYear}) — {latestScore}%
+            {latestNuanceLabel && <span className="text-slate-400 ml-1">· {latestNuanceLabel}</span>}
+          </span>
         </div>
       )}
     </button>

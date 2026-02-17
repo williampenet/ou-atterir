@@ -1,6 +1,6 @@
 import React from 'react';
 import { Commune } from '../types';
-import { NUANCE_COLORS } from '../constants';
+import { BLOC_COLORS } from '../constants';
 import StabilityBadge from './StabilityBadge';
 import { MapPin } from 'lucide-react';
 
@@ -12,6 +12,8 @@ interface Props {
 const CommuneCard: React.FC<Props> = ({ commune, loading }) => {
   const sorted = [...commune.history].sort((a, b) => b.year - a.year);
   const recent = sorted.length > 0 ? sorted[0] : null;
+
+  const getBlocColor = (bloc: string) => BLOC_COLORS[bloc] || '#94a3b8';
 
   return (
     <div className="flex flex-col w-full">
@@ -33,7 +35,7 @@ const CommuneCard: React.FC<Props> = ({ commune, loading }) => {
             <div className="flex -space-x-2 mr-3">
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold border-2 border-white ring-1 ring-slate-100"
-                style={{ backgroundColor: NUANCE_COLORS[recent.winnerNuance] }}
+                style={{ backgroundColor: getBlocColor(recent.winnerBloc) }}
               >
                 {recent.winnerNuance.substring(0, 2)}
               </div>
@@ -41,7 +43,7 @@ const CommuneCard: React.FC<Props> = ({ commune, loading }) => {
             <div>
               <p className="text-xs text-slate-500 uppercase font-bold tracking-wide">Maire actuel</p>
               <p className="text-sm font-semibold text-slate-800">
-                {commune.currentMayor} <span className="text-slate-400 font-normal">({recent.winnerNuance})</span>
+                {commune.currentMayor} <span className="text-slate-400 font-normal">({recent.winnerNuanceLabel})</span>
               </p>
             </div>
           </div>
@@ -62,10 +64,10 @@ const CommuneCard: React.FC<Props> = ({ commune, loading }) => {
               <div key={election.year} className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100">
                 <div className="flex items-center">
                   <span className="text-sm font-bold text-slate-700 w-12">{election.year}</span>
-                  <div className="h-3 w-3 rounded-full mr-3 flex-shrink-0" style={{ backgroundColor: NUANCE_COLORS[election.winnerNuance] }} />
+                  <div className="h-3 w-3 rounded-full mr-3 flex-shrink-0" style={{ backgroundColor: getBlocColor(election.winnerBloc) }} />
                   <div className="flex flex-col">
                     <span className="text-sm font-medium text-slate-800">{election.winnerName}</span>
-                    <span className="text-[10px] text-slate-500">{election.winnerNuance}</span>
+                    <span className="text-[10px] text-slate-500">{election.winnerNuanceLabel} · {election.winnerBloc}</span>
                   </div>
                 </div>
                 <div className="text-right">

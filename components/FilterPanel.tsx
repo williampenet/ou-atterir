@@ -14,6 +14,7 @@ const BLOC_OPTIONS = [
   { value: PoliticalBloc.CENTRE, label: 'Centre' },
   { value: PoliticalBloc.DROITE, label: 'Droite' },
   { value: PoliticalBloc.EXTREME_DROITE, label: 'Extrême-droite' },
+  { value: PoliticalBloc.DIVERS, label: 'Divers' },
 ];
 
 const FilterPanel: React.FC<Props> = ({ onFiltersChange }) => {

@@ -1,27 +1,18 @@
-export enum PoliticalNuance {
-  EXG = 'Extrême-gauche',
-  G = 'Gauche',
-  CG = 'Centre Gauche',
-  C = 'Centre',
-  CD = 'Centre Droit',
-  D = 'Droite',
-  EXD = 'Extrême-droite',
-  DIV = 'Divers'
-}
-
 export enum StabilityLevel {
-  FORTRESS = 'Forteresse', // Same block 3 times
-  STABLE = 'Stable',       // Same block 2 times recently
-  SWING = 'En bascule',    // Changed blocks
-  UNSTABLE = 'Instable'    // Chaotic
+  FORTRESS = 'Forteresse',
+  STABLE = 'Stable',
+  SWING = 'En bascule',
+  UNSTABLE = 'Instable'
 }
 
 export interface ElectionResult {
   year: number;
-  winnerNuance: PoliticalNuance;
+  winnerNuance: string;
+  winnerNuanceLabel: string;
+  winnerBloc: string;
   winnerName: string;
-  score: number; // Percentage
-  turnout: number; // Participation
+  score: number;
+  turnout: number;
 }
 
 export interface Commune {
@@ -29,7 +20,7 @@ export interface Commune {
   zipcode: string;
   name: string;
   department: string;
-  coordinates: [number, number]; // Lat, Lng
+  coordinates: [number, number];
   history: ElectionResult[];
   stability: StabilityLevel;
   currentMayor: string;
@@ -41,22 +32,17 @@ export enum PoliticalBloc {
   CENTRE = 'Centre',
   DROITE = 'Droite',
   EXTREME_DROITE = 'Extrême-droite',
+  DIVERS = 'Divers',
 }
-
-export const BLOC_NUANCES: Record<PoliticalBloc, PoliticalNuance[]> = {
-  [PoliticalBloc.EXTRÊME_GAUCHE]: [PoliticalNuance.EXG],
-  [PoliticalBloc.GAUCHE]: [PoliticalNuance.G, PoliticalNuance.CG],
-  [PoliticalBloc.CENTRE]: [PoliticalNuance.C],
-  [PoliticalBloc.DROITE]: [PoliticalNuance.CD, PoliticalNuance.D],
-  [PoliticalBloc.EXTREME_DROITE]: [PoliticalNuance.EXD],
-};
 
 export type MatchLevel = 'forteresse' | 'tendance';
 
 export interface IdealResult {
   commune: Commune;
   matchLevel: MatchLevel;
-  latestNuance?: PoliticalNuance;
+  latestNuance?: string;
+  latestNuanceLabel?: string;
+  latestBloc?: string;
   latestWinner?: string;
   latestYear?: number;
   latestScore?: number;
