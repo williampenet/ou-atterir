@@ -123,7 +123,7 @@ function blocToNuanceKeys(bloc: PoliticalBloc): string[] {
 }
 
 // --------------------------------------------------
-// API: Single commune by zipcode (kept for future use)
+// API: Single commune by zipcode
 // --------------------------------------------------
 
 export const searchCommune = async (zipcode: string): Promise<Commune | undefined> => {
@@ -131,6 +131,22 @@ export const searchCommune = async (zipcode: string): Promise<Commune | undefine
     .from('communes')
     .select('*, election_results(*)')
     .eq('zipcode', zipcode)
+    .limit(1)
+    .single();
+
+  if (error || !data) return undefined;
+  return toCommune(data as CommuneRow);
+};
+
+// --------------------------------------------------
+// API: Full commune details by INSEE (with history)
+// --------------------------------------------------
+
+export const getCommuneByInsee = async (insee: string): Promise<Commune | undefined> => {
+  const { data, error } = await supabase
+    .from('communes')
+    .select('*, election_results(*)')
+    .eq('insee', insee)
     .limit(1)
     .single();
 

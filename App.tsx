@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Info } from 'lucide-react';
 import { searchCommunes } from './services/communeService';
 import { Commune, IdealResult, PaginatedResults, SearchFilters } from './types';
-import CommuneCard from './components/CommuneCard';
 import FilterPanel from './components/FilterPanel';
 import ResultsList from './components/ResultsList';
+import CommuneDrawer from './components/CommuneDrawer';
 
 const App: React.FC = () => {
   const [filters, setFilters] = useState<SearchFilters>({});
@@ -27,7 +27,6 @@ const App: React.FC = () => {
 
   useEffect(() => {
     filtersRef.current = filters;
-    setSelectedCommune(null);
     doSearch(filters);
   }, [filters]);
 
@@ -64,10 +63,8 @@ const App: React.FC = () => {
       {/* Main Content */}
       <main className="flex-grow max-w-4xl mx-auto w-full px-4 py-6 space-y-4">
 
-        {/* Filters */}
         <FilterPanel onFiltersChange={setFilters} />
 
-        {/* Results */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 bg-white/50 rounded-2xl border border-dashed border-slate-300">
             <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
@@ -82,14 +79,16 @@ const App: React.FC = () => {
           />
         ) : null}
 
-        {/* Detail panel */}
-        {selectedCommune && (
-          <div className="pt-2">
-            <CommuneCard commune={selectedCommune} />
-          </div>
-        )}
-
       </main>
+
+      {/* Detail drawer */}
+      {selectedCommune && (
+        <CommuneDrawer
+          commune={selectedCommune}
+          onClose={() => setSelectedCommune(null)}
+        />
+      )}
+
     </div>
   );
 };
