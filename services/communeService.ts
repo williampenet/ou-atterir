@@ -48,6 +48,24 @@ interface RpcResultRow {
 }
 
 // --------------------------------------------------
+// Nuances cache (fetched once from DB)
+// --------------------------------------------------
+
+type NuanceInfo = { label: string; bloc: string };
+let nuancesCache: Record<string, NuanceInfo> | null = null;
+
+async function getNuancesMap(): Promise<Record<string, NuanceInfo>> {
+  if (nuancesCache) return nuancesCache;
+  const { data, error } = await supabase.from('nuances').select('code, label, bloc');
+  if (error || !data) return {};
+  nuancesCache = {};
+  for (const row of data as { code: string; label: string; bloc: string }[]) {
+    nuancesCache[row.code] = { label: row.label, bloc: row.bloc };
+  }
+  return nuancesCache;
+}
+
+// --------------------------------------------------
 // Mappers
 // --------------------------------------------------
 
@@ -61,7 +79,7 @@ function mapStability(value: string): StabilityLevel {
   return map[value] ?? StabilityLevel.UNSTABLE;
 }
 
-function toCommune(row: CommuneRow): Commune {
+function toCommune(row: CommuneRow, nuances: Record<string, NuanceInfo>): Commune {
   return {
     insee: row.insee,
     zipcode: row.zipcode,
@@ -70,15 +88,18 @@ function toCommune(row: CommuneRow): Commune {
     coordinates: [row.lat, row.lng],
     stability: mapStability(row.stability),
     currentMayor: row.current_mayor,
-    history: (row.election_results || []).map((e): ElectionResult => ({
-      year: e.year,
-      winnerNuance: e.winner_nuance,
-      winnerNuanceLabel: e.winner_nuance,
-      winnerBloc: '',
-      winnerName: e.winner_name,
-      score: e.score,
-      turnout: e.turnout,
-    })),
+    history: (row.election_results || []).map((e): ElectionResult => {
+      const n = nuances[e.winner_nuance];
+      return {
+        year: e.year,
+        winnerNuance: e.winner_nuance,
+        winnerNuanceLabel: n?.label || e.winner_nuance,
+        winnerBloc: n?.bloc || '',
+        winnerName: e.winner_name,
+        score: e.score,
+        turnout: e.turnout,
+      };
+    }),
   };
 }
 
@@ -109,15 +130,13 @@ function rpcRowToResult(row: RpcResultRow): IdealResult {
 // --------------------------------------------------
 
 export const searchCommune = async (zipcode: string): Promise<Commune | undefined> => {
-  const { data, error } = await supabase
-    .from('communes')
-    .select('*, election_results(*)')
-    .eq('zipcode', zipcode)
-    .limit(1)
-    .single();
+  const [{ data, error }, nuances] = await Promise.all([
+    supabase.from('communes').select('*, election_results(*)').eq('zipcode', zipcode).limit(1).single(),
+    getNuancesMap(),
+  ]);
 
   if (error || !data) return undefined;
-  return toCommune(data as CommuneRow);
+  return toCommune(data as CommuneRow, nuances);
 };
 
 // --------------------------------------------------
@@ -125,15 +144,13 @@ export const searchCommune = async (zipcode: string): Promise<Commune | undefine
 // --------------------------------------------------
 
 export const getCommuneByInsee = async (insee: string): Promise<Commune | undefined> => {
-  const { data, error } = await supabase
-    .from('communes')
-    .select('*, election_results(*)')
-    .eq('insee', insee)
-    .limit(1)
-    .single();
+  const [{ data, error }, nuances] = await Promise.all([
+    supabase.from('communes').select('*, election_results(*)').eq('insee', insee).limit(1).single(),
+    getNuancesMap(),
+  ]);
 
   if (error || !data) return undefined;
-  return toCommune(data as CommuneRow);
+  return toCommune(data as CommuneRow, nuances);
 };
 
 // --------------------------------------------------
