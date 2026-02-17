@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Commune, PoliticalNuance } from '../types';
 import { NUANCE_COLORS } from '../constants';
 import StabilityBadge from './StabilityBadge';
-import TrendChart from './TrendChart';
 import { MapPin, Info, Sparkles } from 'lucide-react';
 import { analyzePoliticalContext } from '../services/geminiService';
 
@@ -56,9 +55,6 @@ const CommuneCard: React.FC<Props> = ({ commune }) => {
       {/* Analytics Body */}
       <div className="p-6 bg-slate-50/50 flex-grow">
         
-        {/* Trend Chart */}
-        <TrendChart history={commune.history} />
-
         {/* Historical List */}
         <div className="mt-6 space-y-3">
             <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Historique Électoral</h4>

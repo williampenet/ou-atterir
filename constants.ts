@@ -19,6 +19,7 @@ export const STABILITY_COLORS: Record<StabilityLevel, string> = {
 };
 
 export const BLOC_COLORS: Record<PoliticalBloc, string> = {
+  [PoliticalBloc.EXTRÊME_GAUCHE]: '#b91c1c',
   [PoliticalBloc.GAUCHE]: '#ec4899',
   [PoliticalBloc.CENTRE]: '#f59e0b',
   [PoliticalBloc.DROITE]: '#2563eb',

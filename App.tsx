@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Map as MapIcon, BarChart2, Info, Compass } from 'lucide-react';
-import { searchCommune, getNearbyCommunes } from './services/communeService';
-import { Commune, IdealResult } from './types';
+import { searchCommune, getNearbyCommunes, searchIdealCommunes } from './services/communeService';
+import { Commune, IdealResult, PaginatedResults, PoliticalBloc } from './types';
 import CommuneCard from './components/CommuneCard';
 import MapComponent from './components/MapComponent';
 import IdealSearchForm from './components/IdealSearchForm';
@@ -13,11 +13,14 @@ const App: React.FC = () => {
   const [nearbyCommunes, setNearbyCommunes] = useState<Commune[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [viewMode, setViewMode] = useState<'card' | 'map'>('card'); // Mobile toggle
+  const [viewMode, setViewMode] = useState<'card' | 'map'>('card');
   const [searchMode, setSearchMode] = useState<'zipcode' | 'ideal'>('zipcode');
-  const [idealResults, setIdealResults] = useState<IdealResult[] | null>(null);
+  const [idealResults, setIdealResults] = useState<PaginatedResults<IdealResult> | null>(null);
 
-  // Load nearby data on mount (mocking "Find towns around me" or generic load)
+  // Store current search params for pagination
+  const [currentBloc, setCurrentBloc] = useState<PoliticalBloc | null>(null);
+  const [currentDepartment, setCurrentDepartment] = useState<string | null>(null);
+
   useEffect(() => {
     getNearbyCommunes().then(setNearbyCommunes);
   }, []);
@@ -38,10 +41,32 @@ const App: React.FC = () => {
       if (result) {
         setSelectedCommune(result);
       } else {
-        setError("Commune non trouvée dans la base de données MVP (Essayer 69001, 33000, 62110, 92200).");
+        setError("Commune non trouvée dans la base de données.");
       }
-    } catch (err) {
+    } catch {
       setError("Erreur de connexion.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleIdealResults = (results: PaginatedResults<IdealResult>) => {
+    setIdealResults(results);
+    setSelectedCommune(null);
+    if (results.data.length > 0) {
+      setNearbyCommunes(results.data.map(r => r.commune));
+    }
+  };
+
+  const handlePageChange = async (page: number) => {
+    if (!currentBloc || !currentDepartment) return;
+    setLoading(true);
+    try {
+      const results = await searchIdealCommunes(currentBloc, currentDepartment, page);
+      setIdealResults(results);
+      setNearbyCommunes(results.data.map(r => r.commune));
+    } catch {
+      // keep current results on error
     } finally {
       setLoading(false);
     }
@@ -50,7 +75,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-slate-100 font-sans">
       
-      {/* Navigation / Header */}
+      {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -65,10 +90,10 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <main className="flex-grow flex flex-col lg:flex-row max-w-7xl mx-auto w-full p-4 gap-6">
         
-        {/* Left Column: Search & Card */}
+        {/* Left Column */}
         <section className={`flex-col gap-6 w-full lg:w-1/3 lg:min-w-[400px] ${viewMode === 'map' ? 'hidden lg:flex' : 'flex'}`}>
             
             {/* Mode Toggle */}
@@ -146,12 +171,10 @@ const App: React.FC = () => {
             ) : (
               <>
                 <IdealSearchForm
-                  onResults={(results) => {
-                    setIdealResults(results);
-                    setSelectedCommune(null);
-                    if (results.length > 0) {
-                      setNearbyCommunes(results.map(r => r.commune));
-                    }
+                  onResults={(results, bloc, department) => {
+                    setCurrentBloc(bloc);
+                    setCurrentDepartment(department);
+                    handleIdealResults(results);
                   }}
                   onLoading={setLoading}
                 />
@@ -162,13 +185,14 @@ const App: React.FC = () => {
                         <p className="text-slate-500 text-sm font-medium">Recherche en cours...</p>
                     </div>
                 ) : idealResults !== null ? (
-                    idealResults.length > 0 ? (
+                    idealResults.data.length > 0 ? (
                       <IdealResultsList
                         results={idealResults}
                         onSelectCommune={(commune) => {
                           setSelectedCommune(commune);
                           setViewMode('map');
                         }}
+                        onPageChange={handlePageChange}
                       />
                     ) : (
                       <div className="flex flex-col items-center justify-center py-12 px-6 text-center bg-white rounded-2xl border border-slate-200 shadow-sm opacity-60">
@@ -190,16 +214,16 @@ const App: React.FC = () => {
             )}
         </section>
 
-        {/* Right Column: Map (Desktop) / Mobile Toggle View */}
+        {/* Right Column: Map */}
         <section className={`flex-grow h-[500px] lg:h-auto w-full lg:w-2/3 rounded-2xl overflow-hidden relative ${viewMode === 'card' ? 'hidden lg:block' : 'block'}`}>
              <MapComponent 
-                center={selectedCommune ? selectedCommune.coordinates : [46.603354, 1.888334]} // France center default
+                center={selectedCommune ? selectedCommune.coordinates : [46.603354, 1.888334]}
                 communes={nearbyCommunes}
                 selectedId={selectedCommune?.insee}
                 isVisible={viewMode === 'map'}
              />
              
-             {/* Map Overlay Stats (Optional) */}
+             {/* Map Legend */}
              <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md p-3 rounded-xl shadow-lg border border-white/20 z-[400] max-w-xs">
                  <p className="text-xs font-bold text-slate-500 uppercase">Légende</p>
                  <div className="mt-2 space-y-1">

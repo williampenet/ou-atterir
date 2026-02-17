@@ -36,6 +36,7 @@ export interface Commune {
 }
 
 export enum PoliticalBloc {
+  EXTRÊME_GAUCHE = 'Extrême-gauche',
   GAUCHE = 'Gauche',
   CENTRE = 'Centre',
   DROITE = 'Droite',
@@ -43,7 +44,8 @@ export enum PoliticalBloc {
 }
 
 export const BLOC_NUANCES: Record<PoliticalBloc, PoliticalNuance[]> = {
-  [PoliticalBloc.GAUCHE]: [PoliticalNuance.EXG, PoliticalNuance.G, PoliticalNuance.CG],
+  [PoliticalBloc.EXTRÊME_GAUCHE]: [PoliticalNuance.EXG],
+  [PoliticalBloc.GAUCHE]: [PoliticalNuance.G, PoliticalNuance.CG],
   [PoliticalBloc.CENTRE]: [PoliticalNuance.C],
   [PoliticalBloc.DROITE]: [PoliticalNuance.CD, PoliticalNuance.D],
   [PoliticalBloc.EXTREME_DROITE]: [PoliticalNuance.EXD],
@@ -54,9 +56,16 @@ export type MatchLevel = 'forteresse' | 'tendance';
 export interface IdealResult {
   commune: Commune;
   matchLevel: MatchLevel;
+  latestNuance?: PoliticalNuance;
+  latestWinner?: string;
+  latestYear?: number;
+  latestScore?: number;
 }
 
-export interface SearchFilters {
-  trend?: PoliticalNuance;
-  stableOnly?: boolean;
+export interface PaginatedResults<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
 }

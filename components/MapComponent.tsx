@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import { Commune } from '../types';
 import L from 'leaflet';
 
-// Fix for Leaflet default icon not loading in React
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 
-let DefaultIcon = L.icon({
-    iconUrl: icon,
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41]
+const DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
 });
 
 L.Marker.prototype.options.icon = DefaultIcon;
@@ -28,7 +30,6 @@ const MapComponent: React.FC<Props> = ({ center, communes, selectedId, isVisible
 
   useEffect(() => {
     if (map) {
-      // Multiple invalidations to handle CSS transitions and layout reflows
       map.invalidateSize();
       setTimeout(() => map.invalidateSize(), 100);
       setTimeout(() => map.invalidateSize(), 300);
@@ -43,10 +44,10 @@ const MapComponent: React.FC<Props> = ({ center, communes, selectedId, isVisible
 
   return (
     <div className="h-full w-full rounded-xl overflow-hidden z-0 border border-slate-200 shadow-inner">
-      <MapContainer 
-        center={center} 
-        zoom={12} 
-        scrollWheelZoom={false} 
+      <MapContainer
+        center={center}
+        zoom={12}
+        scrollWheelZoom={false}
         className="h-full w-full"
         ref={setMap}
       >
@@ -54,9 +55,13 @@ const MapComponent: React.FC<Props> = ({ center, communes, selectedId, isVisible
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {communes.map((commune) => (
-          <React.Fragment key={commune.insee}>
-            <Marker position={commune.coordinates}>
+        <MarkerClusterGroup chunkedLoading>
+          {communes.map((commune) => (
+            <Marker
+              key={commune.insee}
+              position={commune.coordinates}
+              opacity={commune.insee === selectedId ? 1 : 0.7}
+            >
               <Popup>
                 <div className="text-center">
                   <h3 className="font-bold text-slate-800">{commune.name}</h3>
@@ -64,19 +69,8 @@ const MapComponent: React.FC<Props> = ({ center, communes, selectedId, isVisible
                 </div>
               </Popup>
             </Marker>
-            {/* Visual circle indicating influence/area - styling depends on last winner color could be added here */}
-             <Circle 
-                center={commune.coordinates}
-                pathOptions={{ 
-                    fillColor: commune.insee === selectedId ? '#4f46e5' : '#94a3b8', 
-                    color: commune.insee === selectedId ? '#4f46e5' : '#94a3b8', 
-                    opacity: 0.5,
-                    fillOpacity: 0.2
-                }}
-                radius={800}
-            />
-          </React.Fragment>
-        ))}
+          ))}
+        </MarkerClusterGroup>
       </MapContainer>
     </div>
   );

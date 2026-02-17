@@ -1,15 +1,16 @@
 import React from 'react';
-import { IdealResult } from '../types';
+import { IdealResult, PaginatedResults } from '../types';
 import { NUANCE_COLORS } from '../constants';
-import { MapPin, Shield, TrendingUp } from 'lucide-react';
+import { MapPin, Shield, TrendingUp, Compass, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Props {
-  results: IdealResult[];
+  results: PaginatedResults<IdealResult>;
   onSelectCommune: (commune: IdealResult['commune']) => void;
+  onPageChange: (page: number) => void;
 }
 
-const IdealResultsList: React.FC<Props> = ({ results, onSelectCommune }) => {
-  if (results.length === 0) {
+const IdealResultsList: React.FC<Props> = ({ results, onSelectCommune, onPageChange }) => {
+  if (results.data.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-6 text-center bg-white rounded-2xl border border-slate-200 shadow-sm opacity-60">
         <Compass className="w-12 h-12 text-slate-300 mb-3" />
@@ -18,12 +19,16 @@ const IdealResultsList: React.FC<Props> = ({ results, onSelectCommune }) => {
     );
   }
 
-  const forteresses = results.filter(r => r.matchLevel === 'forteresse');
-  const tendances = results.filter(r => r.matchLevel === 'tendance');
+  const forteresses = results.data.filter(r => r.matchLevel === 'forteresse');
+  const tendances = results.data.filter(r => r.matchLevel === 'tendance');
+  const totalPages = Math.ceil(results.total / results.pageSize);
 
   return (
     <div className="space-y-3 animate-fade-in-up">
-      <p className="text-xs text-slate-500 font-medium">{results.length} commune{results.length > 1 ? 's' : ''} trouvée{results.length > 1 ? 's' : ''}</p>
+      <p className="text-xs text-slate-500 font-medium">
+        {results.total} commune{results.total > 1 ? 's' : ''} trouvée{results.total > 1 ? 's' : ''}
+        {totalPages > 1 && <span> — page {results.page}/{totalPages}</span>}
+      </p>
 
       {forteresses.length > 0 && (
         <div className="space-y-2">
@@ -42,15 +47,49 @@ const IdealResultsList: React.FC<Props> = ({ results, onSelectCommune }) => {
           {tendances.map(r => <ResultCard key={r.commune.insee} result={r} onClick={() => onSelectCommune(r.commune)} />)}
         </div>
       )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-2">
+          <button
+            onClick={() => onPageChange(results.page - 1)}
+            disabled={results.page <= 1}
+            className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="text-sm text-slate-600 font-medium px-3">
+            {results.page} / {totalPages}
+          </span>
+          <button
+            onClick={() => onPageChange(results.page + 1)}
+            disabled={!results.hasMore}
+            className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
 
 const ResultCard: React.FC<{ result: IdealResult; onClick: () => void }> = ({ result, onClick }) => {
-  const { commune, matchLevel } = result;
-  const recent = commune.history.length > 0
-    ? commune.history.reduce((prev, cur) => (cur.year > prev.year ? cur : prev))
-    : null;
+  const { commune, matchLevel, latestNuance, latestWinner, latestYear, latestScore } = result;
+
+  // Use RPC-provided latest data, or fall back to history
+  const displayNuance = latestNuance ?? (commune.history.length > 0
+    ? commune.history.reduce((prev, cur) => (cur.year > prev.year ? cur : prev)).winnerNuance
+    : null);
+  const displayWinner = latestWinner ?? (commune.history.length > 0
+    ? commune.history.reduce((prev, cur) => (cur.year > prev.year ? cur : prev)).winnerName
+    : null);
+  const displayYear = latestYear ?? (commune.history.length > 0
+    ? commune.history.reduce((prev, cur) => (cur.year > prev.year ? cur : prev)).year
+    : null);
+  const displayScore = latestScore ?? (commune.history.length > 0
+    ? commune.history.reduce((prev, cur) => (cur.year > prev.year ? cur : prev)).score
+    : null);
 
   return (
     <button
@@ -73,17 +112,14 @@ const ResultCard: React.FC<{ result: IdealResult; onClick: () => void }> = ({ re
           {matchLevel === 'forteresse' ? 'Forteresse' : 'Tendance'}
         </span>
       </div>
-      {recent && (
+      {displayNuance && displayWinner && displayYear && displayScore && (
         <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
-          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: NUANCE_COLORS[recent.winnerNuance] }} />
-          <span>{recent.winnerName} ({recent.year}) — {recent.score}%</span>
+          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: NUANCE_COLORS[displayNuance] }} />
+          <span>{displayWinner} ({displayYear}) — {displayScore}%</span>
         </div>
       )}
     </button>
   );
 };
-
-// Needed for the empty state
-import { Compass } from 'lucide-react';
 
 export default IdealResultsList;

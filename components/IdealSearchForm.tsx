@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { PoliticalBloc, IdealResult } from '../types';
+import { PoliticalBloc, IdealResult, PaginatedResults } from '../types';
 import { BLOC_COLORS } from '../constants';
 import { getDepartments, searchIdealCommunes } from '../services/communeService';
 import { Compass } from 'lucide-react';
 
 interface Props {
-  onResults: (results: IdealResult[]) => void;
+  onResults: (results: PaginatedResults<IdealResult>, bloc: PoliticalBloc, department: string) => void;
   onLoading: (loading: boolean) => void;
 }
 
 const BLOC_OPTIONS = [
+  { value: PoliticalBloc.EXTRÊME_GAUCHE, label: 'Extrême-gauche' },
   { value: PoliticalBloc.GAUCHE, label: 'Gauche' },
   { value: PoliticalBloc.CENTRE, label: 'Centre' },
   { value: PoliticalBloc.DROITE, label: 'Droite' },
@@ -26,7 +27,7 @@ const IdealSearchForm: React.FC<Props> = ({ onResults, onLoading }) => {
     getDepartments().then(setDepartments);
   }, []);
 
-  const handleSearch = async () => {
+  const handleSearch = async (page: number = 1) => {
     if (!bloc || !department) {
       setError('Veuillez remplir tous les champs.');
       return;
@@ -34,8 +35,8 @@ const IdealSearchForm: React.FC<Props> = ({ onResults, onLoading }) => {
     setError('');
     onLoading(true);
     try {
-      const results = await searchIdealCommunes(bloc, department);
-      onResults(results);
+      const results = await searchIdealCommunes(bloc, department, page);
+      onResults(results, bloc, department);
     } catch {
       setError('Erreur lors de la recherche.');
     } finally {
@@ -86,7 +87,7 @@ const IdealSearchForm: React.FC<Props> = ({ onResults, onLoading }) => {
       {error && <p className="text-red-500 text-xs mt-3 font-medium bg-red-50 p-2 rounded-lg">{error}</p>}
 
       <button
-        onClick={handleSearch}
+        onClick={() => handleSearch(1)}
         disabled={!bloc || !department}
         className="mt-4 w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
       >
