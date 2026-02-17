@@ -69,3 +69,9 @@ export interface PaginatedResults<T> {
   pageSize: number;
   hasMore: boolean;
 }
+
+export interface SearchFilters {
+  department?: string;
+  bloc?: PoliticalBloc;
+  matchLevel?: MatchLevel;
+}
