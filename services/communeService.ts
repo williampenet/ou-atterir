@@ -15,6 +15,7 @@ interface CommuneRow {
   lng: number;
   stability: string;
   current_mayor: string;
+  population: number | null;
   election_results: ElectionRow[];
 }
 
@@ -88,6 +89,7 @@ function toCommune(row: CommuneRow, nuances: Record<string, NuanceInfo>): Commun
     coordinates: [row.lat, row.lng],
     stability: mapStability(row.stability),
     currentMayor: row.current_mayor,
+    population: row.population ?? undefined,
     history: (row.election_results || []).map((e): ElectionResult => {
       const n = nuances[e.winner_nuance];
       return {
@@ -193,12 +195,14 @@ export const searchCommunes = async (
   if (filters.bloc) rpcParams.target_bloc = filters.bloc;
   if (filters.matchLevel) rpcParams.target_match_level = filters.matchLevel;
   if (filters.equipmentDomains?.length) rpcParams.target_domains = filters.equipmentDomains;
+  if (filters.populationSizes?.length) rpcParams.target_pop_ranges = filters.populationSizes;
 
   const countParams: Record<string, unknown> = {};
   if (filters.department) countParams.target_department = filters.department;
   if (filters.bloc) countParams.target_bloc = filters.bloc;
   if (filters.matchLevel) countParams.target_match_level = filters.matchLevel;
   if (filters.equipmentDomains?.length) countParams.target_domains = filters.equipmentDomains;
+  if (filters.populationSizes?.length) countParams.target_pop_ranges = filters.populationSizes;
 
   const [resultsRes, countRes] = await Promise.all([
     supabase.rpc('search_communes', rpcParams),

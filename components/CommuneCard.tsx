@@ -2,7 +2,7 @@ import React from 'react';
 import { Commune } from '../types';
 import { BLOC_COLORS } from '../constants';
 import StabilityBadge from './StabilityBadge';
-import { MapPin } from 'lucide-react';
+import { MapPin, Users } from 'lucide-react';
 
 interface Props {
   commune: Commune;
@@ -21,9 +21,17 @@ const CommuneCard: React.FC<Props> = ({ commune, loading }) => {
       <div className="pb-5 border-b border-slate-100">
         <div className="flex justify-between items-start mb-2">
           <div>
-            <div className="flex items-center text-slate-400 text-sm mb-1">
-              <MapPin className="w-3 h-3 mr-1" />
-              {commune.zipcode} — {commune.department}
+            <div className="flex items-center gap-3 text-slate-400 text-sm mb-1">
+              <span className="inline-flex items-center">
+                <MapPin className="w-3 h-3 mr-1" />
+                {commune.zipcode} — {commune.department}
+              </span>
+              {commune.population != null && (
+                <span className="inline-flex items-center">
+                  <Users className="w-3 h-3 mr-1" />
+                  {commune.population.toLocaleString('fr-FR')} hab.
+                </span>
+              )}
             </div>
             <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">{commune.name}</h2>
           </div>

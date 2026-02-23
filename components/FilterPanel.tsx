@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { PoliticalBloc, SearchFilters, MatchLevel, EquipmentDomain } from '../types';
-import { BLOC_COLORS, EQUIPMENT_DOMAINS } from '../constants';
+import { PoliticalBloc, SearchFilters, MatchLevel, EquipmentDomain, PopulationSize } from '../types';
+import { BLOC_COLORS, EQUIPMENT_DOMAINS, POPULATION_SIZES } from '../constants';
 import { getDepartments } from '../services/communeService';
-import { SlidersHorizontal, Shield, TrendingUp, Building2, ShoppingBag, GraduationCap, Heart, Train, Dumbbell, Palmtree } from 'lucide-react';
+import { SlidersHorizontal, Shield, TrendingUp, Building2, ShoppingBag, GraduationCap, Heart, Train, Dumbbell, Palmtree, Users } from 'lucide-react';
 
 interface Props {
   onFiltersChange: (filters: SearchFilters) => void;
@@ -23,6 +23,7 @@ const FilterPanel: React.FC<Props> = ({ onFiltersChange }) => {
   const [bloc, setBloc] = useState<PoliticalBloc | ''>('');
   const [matchLevel, setMatchLevel] = useState<MatchLevel | ''>('');
   const [selectedDomains, setSelectedDomains] = useState<EquipmentDomain[]>([]);
+  const [selectedSizes, setSelectedSizes] = useState<PopulationSize[]>([]);
 
   useEffect(() => {
     getDepartments().then(setDepartments);
@@ -34,14 +35,21 @@ const FilterPanel: React.FC<Props> = ({ onFiltersChange }) => {
     if (bloc) filters.bloc = bloc as PoliticalBloc;
     if (matchLevel) filters.matchLevel = matchLevel as MatchLevel;
     if (selectedDomains.length > 0) filters.equipmentDomains = selectedDomains;
+    if (selectedSizes.length > 0) filters.populationSizes = selectedSizes;
     onFiltersChange(filters);
-  }, [department, bloc, matchLevel, selectedDomains]);
+  }, [department, bloc, matchLevel, selectedDomains, selectedSizes]);
 
-  const activeCount = [department, bloc, matchLevel].filter(Boolean).length + selectedDomains.length;
+  const activeCount = [department, bloc, matchLevel].filter(Boolean).length + selectedDomains.length + selectedSizes.length;
 
   const toggleDomain = (domain: EquipmentDomain) => {
     setSelectedDomains(prev =>
       prev.includes(domain) ? prev.filter(d => d !== domain) : [...prev, domain]
+    );
+  };
+
+  const toggleSize = (size: PopulationSize) => {
+    setSelectedSizes(prev =>
+      prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]
     );
   };
 
@@ -50,6 +58,7 @@ const FilterPanel: React.FC<Props> = ({ onFiltersChange }) => {
     setBloc('');
     setMatchLevel('');
     setSelectedDomains([]);
+    setSelectedSizes([]);
   };
 
   return (
@@ -153,6 +162,33 @@ const FilterPanel: React.FC<Props> = ({ onFiltersChange }) => {
               >
                 <Icon className="w-3 h-3" />
                 {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Population size filter */}
+      <div className="mt-3 pt-3 border-t border-slate-100">
+        <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Taille de commune</label>
+        <div className="flex flex-wrap gap-1.5">
+          {(Object.entries(POPULATION_SIZES) as [PopulationSize, { label: string; min: number; max: number }][]).map(([key, { label, max }]) => {
+            const active = selectedSizes.includes(key);
+            return (
+              <button
+                key={key}
+                onClick={() => toggleSize(key)}
+                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                  active
+                    ? 'bg-violet-50 border-violet-300 text-violet-700'
+                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'
+                }`}
+              >
+                <Users className="w-3 h-3" />
+                {label}
+                <span className="text-[10px] font-normal opacity-70">
+                  {max === Infinity ? '200k+' : max >= 1000 ? `<${max / 1000}k` : `<${max}`}
+                </span>
               </button>
             );
           })}

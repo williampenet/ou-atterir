@@ -24,6 +24,7 @@ export interface Commune {
   history: ElectionResult[];
   stability: StabilityLevel;
   currentMayor: string;
+  population?: number;
 }
 
 export enum PoliticalBloc {
@@ -58,11 +59,14 @@ export interface PaginatedResults<T> {
 
 export type EquipmentDomain = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
 
+export type PopulationSize = 'hameau' | 'village' | 'bourg' | 'petite_ville' | 'ville_moyenne' | 'grande_ville' | 'metropole';
+
 export interface SearchFilters {
   department?: string;
   bloc?: PoliticalBloc;
   matchLevel?: MatchLevel;
   equipmentDomains?: EquipmentDomain[];
+  populationSizes?: PopulationSize[];
 }
 
 export interface EquipmentSummary {

@@ -8,3 +8,4 @@ dist
 data/
 supabase/seed_real_data.sql
 supabase/seed_commune_equipments.sql
+supabase/seed_population.sql

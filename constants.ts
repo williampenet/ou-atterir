@@ -1,4 +1,4 @@
-import { PoliticalBloc, StabilityLevel, EquipmentDomain } from './types';
+import { PoliticalBloc, StabilityLevel, EquipmentDomain, PopulationSize } from './types';
 
 export const BLOC_COLORS: Record<string, string> = {
   [PoliticalBloc.EXTRÊME_GAUCHE]: '#b91c1c',
@@ -17,6 +17,16 @@ export const EQUIPMENT_DOMAINS: Record<EquipmentDomain, { label: string; icon: s
   E: { label: 'Transports', icon: 'Train' },
   F: { label: 'Sports & Culture', icon: 'Dumbbell' },
   G: { label: 'Tourisme', icon: 'Palmtree' },
+};
+
+export const POPULATION_SIZES: Record<PopulationSize, { label: string; min: number; max: number }> = {
+  hameau: { label: 'Hameau', min: 0, max: 200 },
+  village: { label: 'Village', min: 200, max: 500 },
+  bourg: { label: 'Bourg', min: 500, max: 2000 },
+  petite_ville: { label: 'Petite ville', min: 2000, max: 10000 },
+  ville_moyenne: { label: 'Ville moyenne', min: 10000, max: 50000 },
+  grande_ville: { label: 'Grande ville', min: 50000, max: 200000 },
+  metropole: { label: 'Métropole', min: 200000, max: Infinity },
 };
 
 export const STABILITY_COLORS: Record<StabilityLevel, string> = {
