@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Commune, ElectionResult, StabilityLevel, IdealResult, PaginatedResults, SearchFilters, MatchLevel } from '../types';
+import { Commune, ElectionResult, StabilityLevel, IdealResult, PaginatedResults, SearchFilters, MatchLevel, EquipmentSummary, EquipmentDomain } from '../types';
 
 // --------------------------------------------------
 // Row types (database shape)
@@ -192,14 +192,17 @@ export const searchCommunes = async (
   if (filters.department) rpcParams.target_department = filters.department;
   if (filters.bloc) rpcParams.target_bloc = filters.bloc;
   if (filters.matchLevel) rpcParams.target_match_level = filters.matchLevel;
+  if (filters.equipmentDomains?.length) rpcParams.target_domains = filters.equipmentDomains;
+
+  const countParams: Record<string, unknown> = {};
+  if (filters.department) countParams.target_department = filters.department;
+  if (filters.bloc) countParams.target_bloc = filters.bloc;
+  if (filters.matchLevel) countParams.target_match_level = filters.matchLevel;
+  if (filters.equipmentDomains?.length) countParams.target_domains = filters.equipmentDomains;
 
   const [resultsRes, countRes] = await Promise.all([
     supabase.rpc('search_communes', rpcParams),
-    supabase.rpc('count_communes', {
-      ...(filters.department ? { target_department: filters.department } : {}),
-      ...(filters.bloc ? { target_bloc: filters.bloc } : {}),
-      ...(filters.matchLevel ? { target_match_level: filters.matchLevel } : {}),
-    }),
+    supabase.rpc('count_communes', countParams),
   ]);
 
   if (resultsRes.error) {
@@ -216,4 +219,22 @@ export const searchCommunes = async (
     pageSize,
     hasMore: offset + rows.length < total,
   };
+};
+
+// --------------------------------------------------
+// API: Equipment summary for a commune
+// --------------------------------------------------
+
+export const getEquipmentSummary = async (insee: string): Promise<EquipmentSummary[]> => {
+  const { data, error } = await supabase.rpc('get_commune_equipments', {
+    target_insee: insee,
+  });
+
+  if (error || !data) return [];
+
+  return (data as { domain: string; domain_label: string; total_count: number }[]).map(row => ({
+    domain: row.domain as EquipmentDomain,
+    domainLabel: row.domain_label,
+    totalCount: row.total_count,
+  }));
 };

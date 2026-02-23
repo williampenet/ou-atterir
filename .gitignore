@@ -5,3 +5,6 @@ dist
 .vercel
 *.log
 .DS_Store
+data/
+supabase/seed_real_data.sql
+supabase/seed_commune_equipments.sql

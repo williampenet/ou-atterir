@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { PoliticalBloc, SearchFilters, MatchLevel } from '../types';
-import { BLOC_COLORS } from '../constants';
+import { PoliticalBloc, SearchFilters, MatchLevel, EquipmentDomain } from '../types';
+import { BLOC_COLORS, EQUIPMENT_DOMAINS } from '../constants';
 import { getDepartments } from '../services/communeService';
-import { SlidersHorizontal, Shield, TrendingUp } from 'lucide-react';
+import { SlidersHorizontal, Shield, TrendingUp, Building2, ShoppingBag, GraduationCap, Heart, Train, Dumbbell, Palmtree } from 'lucide-react';
 
 interface Props {
   onFiltersChange: (filters: SearchFilters) => void;
@@ -22,6 +22,7 @@ const FilterPanel: React.FC<Props> = ({ onFiltersChange }) => {
   const [department, setDepartment] = useState<string>('');
   const [bloc, setBloc] = useState<PoliticalBloc | ''>('');
   const [matchLevel, setMatchLevel] = useState<MatchLevel | ''>('');
+  const [selectedDomains, setSelectedDomains] = useState<EquipmentDomain[]>([]);
 
   useEffect(() => {
     getDepartments().then(setDepartments);
@@ -32,15 +33,23 @@ const FilterPanel: React.FC<Props> = ({ onFiltersChange }) => {
     if (department) filters.department = department;
     if (bloc) filters.bloc = bloc as PoliticalBloc;
     if (matchLevel) filters.matchLevel = matchLevel as MatchLevel;
+    if (selectedDomains.length > 0) filters.equipmentDomains = selectedDomains;
     onFiltersChange(filters);
-  }, [department, bloc, matchLevel]);
+  }, [department, bloc, matchLevel, selectedDomains]);
 
-  const activeCount = [department, bloc, matchLevel].filter(Boolean).length;
+  const activeCount = [department, bloc, matchLevel].filter(Boolean).length + selectedDomains.length;
+
+  const toggleDomain = (domain: EquipmentDomain) => {
+    setSelectedDomains(prev =>
+      prev.includes(domain) ? prev.filter(d => d !== domain) : [...prev, domain]
+    );
+  };
 
   const handleReset = () => {
     setDepartment('');
     setBloc('');
     setMatchLevel('');
+    setSelectedDomains([]);
   };
 
   return (
@@ -124,8 +133,43 @@ const FilterPanel: React.FC<Props> = ({ onFiltersChange }) => {
           </div>
         </div>
       </div>
+
+      {/* Equipment domains filter */}
+      <div className="mt-3 pt-3 border-t border-slate-100">
+        <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Équipements & services</label>
+        <div className="flex flex-wrap gap-1.5">
+          {(Object.entries(EQUIPMENT_DOMAINS) as [EquipmentDomain, { label: string; icon: string }][]).map(([code, { label }]) => {
+            const active = selectedDomains.includes(code);
+            const Icon = DOMAIN_ICONS[code];
+            return (
+              <button
+                key={code}
+                onClick={() => toggleDomain(code)}
+                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                  active
+                    ? 'bg-indigo-50 border-indigo-300 text-indigo-700'
+                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'
+                }`}
+              >
+                <Icon className="w-3 h-3" />
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
+};
+
+const DOMAIN_ICONS: Record<EquipmentDomain, React.FC<{ className?: string }>> = {
+  A: Building2,
+  B: ShoppingBag,
+  C: GraduationCap,
+  D: Heart,
+  E: Train,
+  F: Dumbbell,
+  G: Palmtree,
 };
 
 export default FilterPanel;

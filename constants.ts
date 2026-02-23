@@ -1,4 +1,4 @@
-import { PoliticalBloc, StabilityLevel } from './types';
+import { PoliticalBloc, StabilityLevel, EquipmentDomain } from './types';
 
 export const BLOC_COLORS: Record<string, string> = {
   [PoliticalBloc.EXTRÊME_GAUCHE]: '#b91c1c',
@@ -7,6 +7,16 @@ export const BLOC_COLORS: Record<string, string> = {
   [PoliticalBloc.DROITE]: '#2563eb',
   [PoliticalBloc.EXTREME_DROITE]: '#1e1b4b',
   [PoliticalBloc.DIVERS]: '#94a3b8',
+};
+
+export const EQUIPMENT_DOMAINS: Record<EquipmentDomain, { label: string; icon: string }> = {
+  A: { label: 'Services', icon: 'Building2' },
+  B: { label: 'Commerces', icon: 'ShoppingBag' },
+  C: { label: 'Enseignement', icon: 'GraduationCap' },
+  D: { label: 'Santé', icon: 'Heart' },
+  E: { label: 'Transports', icon: 'Train' },
+  F: { label: 'Sports & Culture', icon: 'Dumbbell' },
+  G: { label: 'Tourisme', icon: 'Palmtree' },
 };
 
 export const STABILITY_COLORS: Record<StabilityLevel, string> = {

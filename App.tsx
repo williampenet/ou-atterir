@@ -12,23 +12,26 @@ const App: React.FC = () => {
   const [selectedCommune, setSelectedCommune] = useState<Commune | null>(null);
   const [loading, setLoading] = useState(false);
   const filtersRef = useRef(filters);
+  const searchIdRef = useRef(0);
 
   const doSearch = async (f: SearchFilters, page: number = 1) => {
+    const id = ++searchIdRef.current;
     setLoading(true);
     try {
       const res = await searchCommunes(f, page);
-      setResults(res);
+      if (id === searchIdRef.current) setResults(res);
     } catch {
-      setResults({ data: [], total: 0, page: 1, pageSize: 30, hasMore: false });
+      if (id === searchIdRef.current) setResults({ data: [], total: 0, page: 1, pageSize: 30, hasMore: false });
     } finally {
-      setLoading(false);
+      if (id === searchIdRef.current) setLoading(false);
     }
   };
 
+  const filtersKey = JSON.stringify(filters);
   useEffect(() => {
     filtersRef.current = filters;
     doSearch(filters);
-  }, [filters]);
+  }, [filtersKey]);
 
   const handlePageChange = (page: number) => {
     doSearch(filtersRef.current, page);

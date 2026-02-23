@@ -56,8 +56,17 @@ export interface PaginatedResults<T> {
   hasMore: boolean;
 }
 
+export type EquipmentDomain = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
+
 export interface SearchFilters {
   department?: string;
   bloc?: PoliticalBloc;
   matchLevel?: MatchLevel;
+  equipmentDomains?: EquipmentDomain[];
+}
+
+export interface EquipmentSummary {
+  domain: EquipmentDomain;
+  domainLabel: string;
+  totalCount: number;
 }

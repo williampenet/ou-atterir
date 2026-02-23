@@ -1,23 +1,35 @@
 import React, { useEffect, useState } from 'react';
-import { Commune } from '../types';
-import { getCommuneByInsee } from '../services/communeService';
+import { Commune, EquipmentSummary, EquipmentDomain } from '../types';
+import { getCommuneByInsee, getEquipmentSummary } from '../services/communeService';
+import { EQUIPMENT_DOMAINS } from '../constants';
 import CommuneCard from './CommuneCard';
-import { X } from 'lucide-react';
+import { X, Building2, ShoppingBag, GraduationCap, Heart, Train, Dumbbell, Palmtree } from 'lucide-react';
 
 interface Props {
   commune: Commune;
   onClose: () => void;
 }
 
+const DOMAIN_ICONS: Record<EquipmentDomain, React.FC<{ className?: string }>> = {
+  A: Building2, B: ShoppingBag, C: GraduationCap, D: Heart,
+  E: Train, F: Dumbbell, G: Palmtree,
+};
+
 const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
   const [fullCommune, setFullCommune] = useState<Commune | null>(null);
   const [loading, setLoading] = useState(true);
+  const [equipments, setEquipments] = useState<EquipmentSummary[]>([]);
 
   useEffect(() => {
     setLoading(true);
     setFullCommune(null);
-    getCommuneByInsee(commune.insee).then((data) => {
+    setEquipments([]);
+    Promise.all([
+      getCommuneByInsee(commune.insee),
+      getEquipmentSummary(commune.insee),
+    ]).then(([data, eqs]) => {
       setFullCommune(data ?? commune);
+      setEquipments(eqs);
       setLoading(false);
     });
   }, [commune.insee]);
@@ -64,6 +76,27 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
             commune={fullCommune ?? commune}
             loading={loading}
           />
+
+          {/* Equipment summary */}
+          {equipments.length > 0 && (
+            <div className="mt-5 bg-slate-50 rounded-xl p-4 border border-slate-200">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Équipements & services</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {equipments.map(eq => {
+                  const Icon = DOMAIN_ICONS[eq.domain];
+                  return (
+                    <div key={eq.domain} className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-slate-100">
+                      <Icon className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-slate-700 truncate">{EQUIPMENT_DOMAINS[eq.domain]?.label ?? eq.domainLabel}</p>
+                        <p className="text-[10px] text-slate-400">{eq.totalCount} équipement{eq.totalCount > 1 ? 's' : ''}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>
