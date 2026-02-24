@@ -1,12 +1,47 @@
--- ============================================
--- Ou Atterir - Migration V6
--- BPE equipment data: reference table + commune equipments
--- Run this in the Supabase SQL Editor BEFORE importing seed data
--- ============================================
+-- ==========================================================
+-- Ou Atterir — Baseline migration
+-- Consolidated schema (from former migration_v1 through v7)
+-- ==========================================================
 
--- =====================
--- 1. Equipment types reference table
--- =====================
+BEGIN;
+
+-- ==========================================================
+-- 1. Tables
+-- ==========================================================
+
+CREATE TABLE IF NOT EXISTS communes (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  insee text UNIQUE NOT NULL,
+  zipcode text NOT NULL,
+  name text NOT NULL,
+  department text NOT NULL,
+  lat double precision NOT NULL,
+  lng double precision NOT NULL,
+  stability text NOT NULL CHECK (stability IN ('FORTRESS', 'STABLE', 'SWING', 'UNSTABLE')),
+  current_mayor text NOT NULL,
+  population integer,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS election_results (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  commune_id uuid NOT NULL REFERENCES communes(id) ON DELETE CASCADE,
+  year integer NOT NULL,
+  winner_nuance text NOT NULL,
+  winner_name text NOT NULL,
+  score double precision NOT NULL,
+  turnout double precision NOT NULL,
+  UNIQUE(commune_id, year)
+);
+
+CREATE TABLE IF NOT EXISTS nuances (
+  code text PRIMARY KEY,
+  label text NOT NULL,
+  bloc text NOT NULL CHECK (bloc IN (
+    'Extrême-gauche', 'Gauche', 'Centre', 'Droite', 'Extrême-droite', 'Divers'
+  ))
+);
+
 CREATE TABLE IF NOT EXISTS equipment_types (
   code text PRIMARY KEY,
   label text NOT NULL,
@@ -16,13 +51,6 @@ CREATE TABLE IF NOT EXISTS equipment_types (
   subdomain_label text NOT NULL
 );
 
-ALTER TABLE equipment_types ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read on equipment_types"
-  ON equipment_types FOR SELECT TO anon USING (true);
-
--- =====================
--- 2. Commune equipments data table
--- =====================
 CREATE TABLE IF NOT EXISTS commune_equipments (
   insee text NOT NULL,
   typequ text NOT NULL REFERENCES equipment_types(code),
@@ -30,19 +58,163 @@ CREATE TABLE IF NOT EXISTS commune_equipments (
   PRIMARY KEY (insee, typequ)
 );
 
+-- ==========================================================
+-- 2. Indexes
+-- ==========================================================
+
+CREATE INDEX IF NOT EXISTS idx_communes_zipcode ON communes(zipcode);
+CREATE INDEX IF NOT EXISTS idx_communes_department ON communes(department);
+CREATE INDEX IF NOT EXISTS idx_communes_stability ON communes(stability);
+CREATE INDEX IF NOT EXISTS idx_communes_dept_stability ON communes(department, stability);
+CREATE INDEX IF NOT EXISTS idx_communes_population ON communes(population);
+
+CREATE INDEX IF NOT EXISTS idx_election_results_commune ON election_results(commune_id);
+CREATE INDEX IF NOT EXISTS idx_election_results_nuance ON election_results(winner_nuance);
+CREATE INDEX IF NOT EXISTS idx_election_results_year ON election_results(year DESC);
+
 CREATE INDEX IF NOT EXISTS idx_ce_insee ON commune_equipments(insee);
 CREATE INDEX IF NOT EXISTS idx_ce_typequ ON commune_equipments(typequ);
 
+-- ==========================================================
+-- 3. Row Level Security
+-- ==========================================================
+
+ALTER TABLE communes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE election_results ENABLE ROW LEVEL SECURITY;
+ALTER TABLE nuances ENABLE ROW LEVEL SECURITY;
+ALTER TABLE equipment_types ENABLE ROW LEVEL SECURITY;
 ALTER TABLE commune_equipments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow public read on communes"
+  ON communes FOR SELECT TO anon USING (true);
+
+CREATE POLICY "Allow public read on election_results"
+  ON election_results FOR SELECT TO anon USING (true);
+
+CREATE POLICY "Allow public read on nuances"
+  ON nuances FOR SELECT TO anon USING (true);
+
+CREATE POLICY "Allow public read on equipment_types"
+  ON equipment_types FOR SELECT TO anon USING (true);
+
 CREATE POLICY "Allow public read on commune_equipments"
   ON commune_equipments FOR SELECT TO anon USING (true);
 
--- =====================
--- 3. Populate equipment types reference
--- =====================
+-- ==========================================================
+-- 4. Reference data: nuances
+-- ==========================================================
+
+INSERT INTO nuances (code, label, bloc) VALUES
+  -- Legacy simplified codes
+  ('G', 'Gauche', 'Gauche'),
+  ('CG', 'Centre Gauche', 'Gauche'),
+  ('C', 'Centre', 'Centre'),
+  ('CD', 'Centre Droit', 'Droite'),
+  ('D', 'Droite', 'Droite'),
+
+  -- Extrême-gauche
+  ('EXG', 'Extrême gauche', 'Extrême-gauche'),
+  ('LEXG', 'Liste d''extrême-gauche', 'Extrême-gauche'),
+  ('DXG', 'Divers extrême gauche', 'Extrême-gauche'),
+  ('PG', 'Parti de Gauche', 'Extrême-gauche'),
+  ('LPG', 'Liste du Parti de Gauche', 'Extrême-gauche'),
+  ('FG', 'Front de gauche', 'Extrême-gauche'),
+  ('LFG', 'Liste Front de Gauche', 'Extrême-gauche'),
+  ('FI', 'La France insoumise', 'Extrême-gauche'),
+  ('LFI', 'La France insoumise', 'Extrême-gauche'),
+
+  -- Gauche
+  ('COM', 'Communiste', 'Gauche'),
+  ('LCOM', 'Liste du Parti communiste français', 'Gauche'),
+  ('LCOP', 'Liste du PCF et du Parti de gauche', 'Gauche'),
+  ('NUP', 'Nouvelle union populaire écologique et sociale', 'Gauche'),
+  ('SOC', 'Socialiste', 'Gauche'),
+  ('LSOC', 'Liste du Parti socialiste', 'Gauche'),
+  ('RDG', 'Radical de Gauche', 'Gauche'),
+  ('LRDG', 'Parti radical de gauche', 'Gauche'),
+  ('DVG', 'Divers gauche', 'Gauche'),
+  ('LDVG', 'Liste divers gauche', 'Gauche'),
+  ('VEC', 'Europe Ecologie / Les Verts', 'Gauche'),
+  ('LVEC', 'Liste des Verts', 'Gauche'),
+  ('ECO', 'Ecologiste', 'Gauche'),
+  ('LECO', 'Ecologiste', 'Gauche'),
+  ('LUG', 'Liste Union de la Gauche', 'Gauche'),
+  ('LUGE', 'Liste d''union à gauche avec des écologiste', 'Gauche'),
+  ('LVEG', 'Liste EELV et gauche', 'Gauche'),
+
+  -- Centre
+  ('MODM', 'MODEM', 'Centre'),
+  ('MDM', 'Modem', 'Centre'),
+  ('LMDM', 'Liste Modem', 'Centre'),
+  ('REM', 'La République en marche', 'Centre'),
+  ('LREM', 'La République en marche', 'Centre'),
+  ('ENS', 'Ensemble ! (Majorité présidentielle)', 'Centre'),
+  ('DVC', 'Divers centre', 'Centre'),
+  ('LDVC', 'Divers centre', 'Centre'),
+  ('CEN', 'Le Centre pour la France', 'Centre'),
+  ('LCEN', 'Liste d''union du centre', 'Centre'),
+  ('NCE', 'Nouveau Centre', 'Centre'),
+  ('UDI', 'Union des Démocrates et Indépendants', 'Centre'),
+  ('LUDI', 'Liste Union Démocrates et Indépendants', 'Centre'),
+  ('ALLI', 'Alliance centriste', 'Centre'),
+  ('LUC', 'Liste Union du Centre', 'Centre'),
+  ('LMC', 'Liste majorité-centristes', 'Centre'),
+  ('LUCG', 'Liste d''union au centre et à gauche', 'Centre'),
+  ('LUCD', 'Liste d''union au centre et à droite', 'Centre'),
+  ('LGC', 'Liste gauche-centristes', 'Centre'),
+  ('PRV', 'Parti radical', 'Centre'),
+  ('MAJ', 'Majorité présidentielle', 'Centre'),
+  ('LMAJ', 'Liste de la majorité', 'Centre'),
+  ('LMP', 'Majorité présidentielle', 'Centre'),
+  ('LMMD', 'Liste Majorité-MoDem', 'Centre'),
+  ('M', 'Autres candidats majorité présidentielle', 'Centre'),
+  ('M-NC', 'Majorité présidentielle', 'Centre'),
+
+  -- Droite
+  ('UMP', 'Union pour un Mouvement Populaire', 'Droite'),
+  ('LUMP', 'Liste Union pour un Mouvement Populaire', 'Droite'),
+  ('LR', 'Les Républicains', 'Droite'),
+  ('LLR', 'Les Républicains', 'Droite'),
+  ('DVD', 'Divers droite', 'Droite'),
+  ('LDVD', 'Liste divers droite', 'Droite'),
+  ('LUD', 'Liste Union de la Droite', 'Droite'),
+  ('UDFD', 'UDF-Mouvement Démocrate', 'Droite'),
+  ('MPF', 'Mouvement pour la France', 'Droite'),
+
+  -- Extrême-droite
+  ('FN', 'Front National', 'Extrême-droite'),
+  ('LFN', 'Liste du Front national', 'Extrême-droite'),
+  ('RN', 'Rassemblement National', 'Extrême-droite'),
+  ('LRN', 'Rassemblement National', 'Extrême-droite'),
+  ('EXD', 'Extrême droite', 'Extrême-droite'),
+  ('LEXD', 'Liste d''extrême-droite', 'Extrême-droite'),
+  ('DXD', 'Divers extrême droite', 'Extrême-droite'),
+  ('DSV', 'Droite souverainiste', 'Extrême-droite'),
+  ('LDSV', 'Liste souverainiste de droite', 'Extrême-droite'),
+  ('DLF', 'Debout la France', 'Extrême-droite'),
+  ('LDLF', 'Debout la France', 'Extrême-droite'),
+  ('DLR', 'Debout la République', 'Extrême-droite'),
+  ('LDLR', 'Liste Debout la République', 'Extrême-droite'),
+  ('REC', 'Reconquête !', 'Extrême-droite'),
+  ('LUXD', 'Liste d''union à l''extrême-droite', 'Extrême-droite'),
+
+  -- Divers
+  ('DIV', 'Divers', 'Divers'),
+  ('LDIV', 'Liste Divers', 'Divers'),
+  ('REG', 'Régionaliste', 'Divers'),
+  ('LREG', 'Liste régionaliste', 'Divers'),
+  ('AUT', 'Autres', 'Divers'),
+  ('LAUT', 'Autre liste', 'Divers'),
+  ('CPNT', 'Chasse Pêche Nature Traditions', 'Divers'),
+  ('LGJ', 'Gilets jaunes', 'Divers'),
+  ('LNC', 'Non Communiqué', 'Divers')
+ON CONFLICT (code) DO UPDATE SET label = EXCLUDED.label, bloc = EXCLUDED.bloc;
+
+-- ==========================================================
+-- 5. Reference data: equipment_types
+-- ==========================================================
+
 INSERT INTO equipment_types (code, label, domain, domain_label, subdomain, subdomain_label) VALUES
-  -- A: Services pour les particuliers
-  -- A1: Services publics
   ('A101', 'Police', 'A', 'Services pour les particuliers', 'A1', 'Services publics'),
   ('A104', 'Gendarmerie', 'A', 'Services pour les particuliers', 'A1', 'Services publics'),
   ('A105', 'Cour d''appel', 'A', 'Services pour les particuliers', 'A1', 'Services publics'),
@@ -60,25 +232,21 @@ INSERT INTO equipment_types (code, label, domain, domain_label, subdomain, subdo
   ('A131', 'Tribunal judiciaire', 'A', 'Services pour les particuliers', 'A1', 'Services publics'),
   ('A132', 'Tribunal de proximité', 'A', 'Services pour les particuliers', 'A1', 'Services publics'),
   ('A133', 'Déchèterie', 'A', 'Services pour les particuliers', 'A1', 'Services publics'),
-  -- A2: Services généraux
   ('A203', 'Banque, caisse d''épargne', 'A', 'Services pour les particuliers', 'A2', 'Services généraux'),
   ('A205', 'Services funéraires', 'A', 'Services pour les particuliers', 'A2', 'Services généraux'),
   ('A206', 'Bureau de poste', 'A', 'Services pour les particuliers', 'A2', 'Services généraux'),
   ('A207', 'Relais poste', 'A', 'Services pour les particuliers', 'A2', 'Services généraux'),
   ('A208', 'Agence postale', 'A', 'Services pour les particuliers', 'A2', 'Services généraux'),
-  -- A3: Services automobiles
   ('A301', 'Réparation automobile', 'A', 'Services pour les particuliers', 'A3', 'Services automobiles'),
   ('A302', 'Contrôle technique automobile', 'A', 'Services pour les particuliers', 'A3', 'Services automobiles'),
   ('A303', 'Location auto-utilitaires', 'A', 'Services pour les particuliers', 'A3', 'Services automobiles'),
   ('A304', 'École de conduite', 'A', 'Services pour les particuliers', 'A3', 'Services automobiles'),
-  -- A4: Artisanat du bâtiment
   ('A401', 'Maçon', 'A', 'Services pour les particuliers', 'A4', 'Artisanat du bâtiment'),
   ('A402', 'Plâtrier peintre', 'A', 'Services pour les particuliers', 'A4', 'Artisanat du bâtiment'),
   ('A403', 'Menuisier charpentier serrurier', 'A', 'Services pour les particuliers', 'A4', 'Artisanat du bâtiment'),
   ('A404', 'Plombier couvreur chauffagiste', 'A', 'Services pour les particuliers', 'A4', 'Artisanat du bâtiment'),
   ('A405', 'Électricien', 'A', 'Services pour les particuliers', 'A4', 'Artisanat du bâtiment'),
   ('A406', 'Entreprise générale du bâtiment', 'A', 'Services pour les particuliers', 'A4', 'Artisanat du bâtiment'),
-  -- A5: Autres services
   ('A501', 'Coiffure', 'A', 'Services pour les particuliers', 'A5', 'Autres services'),
   ('A502', 'Vétérinaire', 'A', 'Services pour les particuliers', 'A5', 'Autres services'),
   ('A503', 'Agence de travail temporaire', 'A', 'Services pour les particuliers', 'A5', 'Autres services'),
@@ -86,13 +254,9 @@ INSERT INTO equipment_types (code, label, domain, domain_label, subdomain, subdo
   ('A505', 'Agence immobilière', 'A', 'Services pour les particuliers', 'A5', 'Autres services'),
   ('A506', 'Pressing, laverie', 'A', 'Services pour les particuliers', 'A5', 'Autres services'),
   ('A507', 'Institut de beauté', 'A', 'Services pour les particuliers', 'A5', 'Autres services'),
-
-  -- B: Commerces
-  -- B1: Grandes surfaces
   ('B103', 'Grande surface de bricolage', 'B', 'Commerces', 'B1', 'Grandes surfaces'),
   ('B104', 'Hypermarché', 'B', 'Commerces', 'B1', 'Grandes surfaces'),
   ('B105', 'Supermarché', 'B', 'Commerces', 'B1', 'Grandes surfaces'),
-  -- B2: Commerces alimentaires
   ('B201', 'Supérette', 'B', 'Commerces', 'B2', 'Commerces alimentaires'),
   ('B202', 'Épicerie', 'B', 'Commerces', 'B2', 'Commerces alimentaires'),
   ('B204', 'Boucherie charcuterie', 'B', 'Commerces', 'B2', 'Commerces alimentaires'),
@@ -102,7 +266,6 @@ INSERT INTO equipment_types (code, label, domain, domain_label, subdomain, subdo
   ('B208', 'Fruits et légumes', 'B', 'Commerces', 'B2', 'Commerces alimentaires'),
   ('B209', 'Commerce de boissons', 'B', 'Commerces', 'B2', 'Commerces alimentaires'),
   ('B210', 'Autres commerces alimentaires', 'B', 'Commerces', 'B2', 'Commerces alimentaires'),
-  -- B3: Commerces spécialisés non-alimentaires
   ('B302', 'Magasin de vêtements', 'B', 'Commerces', 'B3', 'Commerces spécialisés non-alimentaires'),
   ('B303', 'Équipements du foyer', 'B', 'Commerces', 'B3', 'Commerces spécialisés non-alimentaires'),
   ('B304', 'Magasin de chaussures', 'B', 'Commerces', 'B3', 'Commerces spécialisés non-alimentaires'),
@@ -125,45 +288,33 @@ INSERT INTO equipment_types (code, label, domain, domain_label, subdomain, subdo
   ('B323', 'Biens d''occasion', 'B', 'Commerces', 'B3', 'Commerces spécialisés non-alimentaires'),
   ('B324', 'Librairie', 'B', 'Commerces', 'B3', 'Commerces spécialisés non-alimentaires'),
   ('B325', 'Papeterie et presse', 'B', 'Commerces', 'B3', 'Commerces spécialisés non-alimentaires'),
-
-  -- C: Enseignement
-  -- C1: Premier degré
   ('C107', 'École maternelle', 'C', 'Enseignement', 'C1', 'Enseignement du premier degré'),
   ('C108', 'École primaire', 'C', 'Enseignement', 'C1', 'Enseignement du premier degré'),
   ('C109', 'École élémentaire', 'C', 'Enseignement', 'C1', 'Enseignement du premier degré'),
-  -- C2: Second degré - premier cycle
   ('C201', 'Collège', 'C', 'Enseignement', 'C2', 'Second degré - premier cycle'),
-  -- C3: Second degré - second cycle
   ('C301', 'Lycée général et/ou technologique', 'C', 'Enseignement', 'C3', 'Second degré - second cycle'),
   ('C302', 'Lycée professionnel', 'C', 'Enseignement', 'C3', 'Second degré - second cycle'),
   ('C303', 'Lycée agricole', 'C', 'Enseignement', 'C3', 'Second degré - second cycle'),
   ('C304', 'Section enseignement général et technologique', 'C', 'Enseignement', 'C3', 'Second degré - second cycle'),
   ('C305', 'Section enseignement professionnel', 'C', 'Enseignement', 'C3', 'Second degré - second cycle'),
-  -- C4: Enseignement supérieur non-universitaire
   ('C401', 'STS / CPGE', 'C', 'Enseignement', 'C4', 'Supérieur non-universitaire'),
   ('C402', 'Formation santé', 'C', 'Enseignement', 'C4', 'Supérieur non-universitaire'),
   ('C403', 'Formation commerce', 'C', 'Enseignement', 'C4', 'Supérieur non-universitaire'),
   ('C409', 'Autre formation post-bac', 'C', 'Enseignement', 'C4', 'Supérieur non-universitaire'),
-  -- C5: Enseignement supérieur universitaire
   ('C501', 'UFR', 'C', 'Enseignement', 'C5', 'Supérieur universitaire'),
   ('C502', 'Institut universitaire', 'C', 'Enseignement', 'C5', 'Supérieur universitaire'),
   ('C503', 'École d''ingénieurs', 'C', 'Enseignement', 'C5', 'Supérieur universitaire'),
   ('C504', 'Enseignement supérieur privé', 'C', 'Enseignement', 'C5', 'Supérieur universitaire'),
   ('C505', 'École supérieure agricole', 'C', 'Enseignement', 'C5', 'Supérieur universitaire'),
   ('C509', 'Autre enseignement supérieur', 'C', 'Enseignement', 'C5', 'Supérieur universitaire'),
-  -- C6: Formation continue
   ('C601', 'CFA hors agriculture', 'C', 'Enseignement', 'C6', 'Formation continue'),
   ('C602', 'GRETA', 'C', 'Enseignement', 'C6', 'Formation continue'),
   ('C603', 'Formation continue agricole', 'C', 'Enseignement', 'C6', 'Formation continue'),
   ('C604', 'Formation aux métiers du sport', 'C', 'Enseignement', 'C6', 'Formation continue'),
   ('C605', 'Apprentissage agricole', 'C', 'Enseignement', 'C6', 'Formation continue'),
   ('C609', 'Autre formation continue', 'C', 'Enseignement', 'C6', 'Formation continue'),
-  -- C7: Autres services de l'éducation
   ('C701', 'Résidence universitaire', 'C', 'Enseignement', 'C7', 'Autres services éducation'),
   ('C702', 'Restaurant universitaire', 'C', 'Enseignement', 'C7', 'Autres services éducation'),
-
-  -- D: Santé et action sociale
-  -- D1: Établissements et services de santé
   ('D101', 'Établissement santé court séjour', 'D', 'Santé et action sociale', 'D1', 'Établissements de santé'),
   ('D102', 'Établissement santé moyen séjour', 'D', 'Santé et action sociale', 'D1', 'Établissements de santé'),
   ('D103', 'Établissement santé long séjour', 'D', 'Santé et action sociale', 'D1', 'Établissements de santé'),
@@ -177,7 +328,6 @@ INSERT INTO equipment_types (code, label, domain, domain_label, subdomain, subdo
   ('D111', 'Dialyse', 'D', 'Santé et action sociale', 'D1', 'Établissements de santé'),
   ('D112', 'Hospitalisation à domicile', 'D', 'Santé et action sociale', 'D1', 'Établissements de santé'),
   ('D113', 'Maison de santé pluridisciplinaire', 'D', 'Santé et action sociale', 'D1', 'Établissements de santé'),
-  -- D2: Fonctions médicales et paramédicales
   ('D201', 'Médecin généraliste', 'D', 'Santé et action sociale', 'D2', 'Professions médicales libérales'),
   ('D202', 'Cardiologue', 'D', 'Santé et action sociale', 'D2', 'Professions médicales libérales'),
   ('D203', 'Dermatologue', 'D', 'Santé et action sociale', 'D2', 'Professions médicales libérales'),
@@ -202,48 +352,37 @@ INSERT INTO equipment_types (code, label, domain, domain_label, subdomain, subdo
   ('D242', 'Diététicien', 'D', 'Santé et action sociale', 'D2', 'Professions médicales libérales'),
   ('D243', 'Psychologue', 'D', 'Santé et action sociale', 'D2', 'Professions médicales libérales'),
   ('D244', 'Infirmier', 'D', 'Santé et action sociale', 'D2', 'Professions médicales libérales'),
-  -- D3: Autres établissements sanitaires
   ('D302', 'Laboratoire d''analyses', 'D', 'Santé et action sociale', 'D3', 'Autres établissements sanitaires'),
   ('D303', 'Ambulance', 'D', 'Santé et action sociale', 'D3', 'Autres établissements sanitaires'),
   ('D304', 'Transfusion sanguine', 'D', 'Santé et action sociale', 'D3', 'Autres établissements sanitaires'),
   ('D305', 'Établissement thermal', 'D', 'Santé et action sociale', 'D3', 'Autres établissements sanitaires'),
   ('D307', 'Pharmacie', 'D', 'Santé et action sociale', 'D3', 'Autres établissements sanitaires'),
-  -- D4: Action sociale personnes âgées
   ('D401', 'Hébergement personnes âgées', 'D', 'Santé et action sociale', 'D4', 'Action sociale personnes âgées'),
   ('D402', 'Soins à domicile personnes âgées', 'D', 'Santé et action sociale', 'D4', 'Action sociale personnes âgées'),
   ('D403', 'Services d''aide personnes âgées', 'D', 'Santé et action sociale', 'D4', 'Action sociale personnes âgées'),
-  -- D5: Action sociale enfants
   ('D502', 'Accueil du jeune enfant (EAJE)', 'D', 'Santé et action sociale', 'D5', 'Action sociale enfants'),
   ('D503', 'Lieu d''accueil enfant-parent', 'D', 'Santé et action sociale', 'D5', 'Action sociale enfants'),
   ('D504', 'Relais petite enfance', 'D', 'Santé et action sociale', 'D5', 'Action sociale enfants'),
   ('D505', 'Accueil de loisir sans hébergement', 'D', 'Santé et action sociale', 'D5', 'Action sociale enfants'),
   ('D506', 'Centre social', 'D', 'Santé et action sociale', 'D5', 'Action sociale enfants'),
   ('D507', 'Médiation familiale', 'D', 'Santé et action sociale', 'D5', 'Action sociale enfants'),
-  -- D6: Action sociale handicapés
   ('D601', 'Hébergement enfants handicapés', 'D', 'Santé et action sociale', 'D6', 'Action sociale handicapés'),
   ('D602', 'Services enfants handicapés', 'D', 'Santé et action sociale', 'D6', 'Action sociale handicapés'),
   ('D603', 'Hébergement adultes handicapés', 'D', 'Santé et action sociale', 'D6', 'Action sociale handicapés'),
   ('D604', 'Services d''aide adultes handicapés', 'D', 'Santé et action sociale', 'D6', 'Action sociale handicapés'),
   ('D605', 'Travail protégé', 'D', 'Santé et action sociale', 'D6', 'Action sociale handicapés'),
   ('D606', 'Soins à domicile adultes handicapés', 'D', 'Santé et action sociale', 'D6', 'Action sociale handicapés'),
-  -- D7: Autres services d'action sociale
   ('D701', 'Protection de l''enfance - hébergement', 'D', 'Santé et action sociale', 'D7', 'Autres action sociale'),
   ('D702', 'Protection de l''enfance - action éducative', 'D', 'Santé et action sociale', 'D7', 'Autres action sociale'),
   ('D703', 'CHRS', 'D', 'Santé et action sociale', 'D7', 'Autres action sociale'),
   ('D704', 'Centre provisoire d''hébergement', 'D', 'Santé et action sociale', 'D7', 'Autres action sociale'),
   ('D705', 'Centre accueil demandeur d''asile', 'D', 'Santé et action sociale', 'D7', 'Autres action sociale'),
   ('D709', 'Autres établissements action sociale', 'D', 'Santé et action sociale', 'D7', 'Autres action sociale'),
-
-  -- E: Transports et déplacements
-  -- E1: Infrastructures de transports
   ('E101', 'Taxi-VTC', 'E', 'Transports et déplacements', 'E1', 'Infrastructures de transports'),
   ('E102', 'Aéroport', 'E', 'Transports et déplacements', 'E1', 'Infrastructures de transports'),
   ('E107', 'Gare d''intérêt national', 'E', 'Transports et déplacements', 'E1', 'Infrastructures de transports'),
   ('E108', 'Gare d''intérêt régional', 'E', 'Transports et déplacements', 'E1', 'Infrastructures de transports'),
   ('E109', 'Gare d''intérêt local', 'E', 'Transports et déplacements', 'E1', 'Infrastructures de transports'),
-
-  -- F: Sports, loisirs et culture
-  -- F1: Équipements sportifs
   ('F101', 'Bassin de natation', 'F', 'Sports, loisirs et culture', 'F1', 'Équipements sportifs'),
   ('F102', 'Boulodrome', 'F', 'Sports, loisirs et culture', 'F1', 'Équipements sportifs'),
   ('F103', 'Tennis', 'F', 'Sports, loisirs et culture', 'F1', 'Équipements sportifs'),
@@ -269,12 +408,10 @@ INSERT INTO equipment_types (code, label, domain, domain_label, subdomain, subdo
   ('F124', 'Pas de tir', 'F', 'Sports, loisirs et culture', 'F1', 'Équipements sportifs'),
   ('F125', 'Activités aériennes', 'F', 'Sports, loisirs et culture', 'F1', 'Équipements sportifs'),
   ('F126', 'Modélisme', 'F', 'Sports, loisirs et culture', 'F1', 'Équipements sportifs'),
-  -- F2: Équipements de loisirs
   ('F201', 'Baignade aménagée', 'F', 'Sports, loisirs et culture', 'F2', 'Équipements de loisirs'),
   ('F202', 'Port de plaisance', 'F', 'Sports, loisirs et culture', 'F2', 'Équipements de loisirs'),
   ('F203', 'Randonnée', 'F', 'Sports, loisirs et culture', 'F2', 'Équipements de loisirs'),
   ('F204', 'Sports de nature', 'F', 'Sports, loisirs et culture', 'F2', 'Équipements de loisirs'),
-  -- F3: Équipements culturels et socioculturels
   ('F303', 'Cinéma', 'F', 'Sports, loisirs et culture', 'F3', 'Équipements culturels'),
   ('F305', 'Conservatoire', 'F', 'Sports, loisirs et culture', 'F3', 'Équipements culturels'),
   ('F307', 'Bibliothèque', 'F', 'Sports, loisirs et culture', 'F3', 'Équipements culturels'),
@@ -282,9 +419,6 @@ INSERT INTO equipment_types (code, label, domain, domain_label, subdomain, subdo
   ('F313', 'Espace remarquable et patrimoine', 'F', 'Sports, loisirs et culture', 'F3', 'Équipements culturels'),
   ('F314', 'Archives', 'F', 'Sports, loisirs et culture', 'F3', 'Équipements culturels'),
   ('F315', 'Arts du spectacle', 'F', 'Sports, loisirs et culture', 'F3', 'Équipements culturels'),
-
-  -- G: Tourisme
-  -- G1: Tourisme
   ('G101', 'Agence de voyage', 'G', 'Tourisme', 'G1', 'Tourisme'),
   ('G102', 'Hôtel', 'G', 'Tourisme', 'G1', 'Tourisme'),
   ('G103', 'Camping', 'G', 'Tourisme', 'G1', 'Tourisme'),
@@ -297,14 +431,24 @@ ON CONFLICT (code) DO UPDATE SET
   subdomain = EXCLUDED.subdomain,
   subdomain_label = EXCLUDED.subdomain_label;
 
--- =====================
--- 4. Update search_communes RPC with equipment domain filter
--- =====================
+-- ==========================================================
+-- 6. RPC Functions
+-- ==========================================================
+
+CREATE OR REPLACE FUNCTION get_distinct_departments()
+RETURNS TABLE (department text) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT DISTINCT c.department FROM communes c ORDER BY c.department;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
 CREATE OR REPLACE FUNCTION search_communes(
   target_department text DEFAULT NULL,
   target_bloc text DEFAULT NULL,
   target_match_level text DEFAULT NULL,
   target_domains text[] DEFAULT NULL,
+  target_pop_ranges text[] DEFAULT NULL,
   page_limit int DEFAULT 30,
   page_offset int DEFAULT 0
 )
@@ -358,6 +502,15 @@ BEGIN
         FROM commune_equipments ce
         JOIN equipment_types et ON et.code = ce.typequ
         WHERE ce.insee = c.insee
+      ))
+      AND (target_pop_ranges IS NULL OR (
+        (c.population < 200 AND 'hameau' = ANY(target_pop_ranges)) OR
+        (c.population >= 200 AND c.population < 500 AND 'village' = ANY(target_pop_ranges)) OR
+        (c.population >= 500 AND c.population < 2000 AND 'bourg' = ANY(target_pop_ranges)) OR
+        (c.population >= 2000 AND c.population < 10000 AND 'petite_ville' = ANY(target_pop_ranges)) OR
+        (c.population >= 10000 AND c.population < 50000 AND 'ville_moyenne' = ANY(target_pop_ranges)) OR
+        (c.population >= 50000 AND c.population < 200000 AND 'grande_ville' = ANY(target_pop_ranges)) OR
+        (c.population >= 200000 AND 'metropole' = ANY(target_pop_ranges))
       ))
     GROUP BY c.id
   ),
@@ -433,14 +586,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE;
 
--- =====================
--- 5. Update count_communes RPC with equipment domain filter
--- =====================
 CREATE OR REPLACE FUNCTION count_communes(
   target_department text DEFAULT NULL,
   target_bloc text DEFAULT NULL,
   target_match_level text DEFAULT NULL,
-  target_domains text[] DEFAULT NULL
+  target_domains text[] DEFAULT NULL,
+  target_pop_ranges text[] DEFAULT NULL
 )
 RETURNS bigint AS $$
 DECLARE
@@ -466,6 +617,15 @@ BEGIN
         FROM commune_equipments ce
         JOIN equipment_types et ON et.code = ce.typequ
         WHERE ce.insee = c.insee
+      ))
+      AND (target_pop_ranges IS NULL OR (
+        (c.population < 200 AND 'hameau' = ANY(target_pop_ranges)) OR
+        (c.population >= 200 AND c.population < 500 AND 'village' = ANY(target_pop_ranges)) OR
+        (c.population >= 500 AND c.population < 2000 AND 'bourg' = ANY(target_pop_ranges)) OR
+        (c.population >= 2000 AND c.population < 10000 AND 'petite_ville' = ANY(target_pop_ranges)) OR
+        (c.population >= 10000 AND c.population < 50000 AND 'ville_moyenne' = ANY(target_pop_ranges)) OR
+        (c.population >= 50000 AND c.population < 200000 AND 'grande_ville' = ANY(target_pop_ranges)) OR
+        (c.population >= 200000 AND 'metropole' = ANY(target_pop_ranges))
       ))
     GROUP BY c.id
   ),
@@ -499,9 +659,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE;
 
--- =====================
--- 6. Helper: get equipment summary for a commune
--- =====================
 CREATE OR REPLACE FUNCTION get_commune_equipments(target_insee text)
 RETURNS TABLE (
   domain char(1),
@@ -521,3 +678,5 @@ BEGIN
   ORDER BY et.domain;
 END;
 $$ LANGUAGE plpgsql STABLE;
+
+COMMIT;

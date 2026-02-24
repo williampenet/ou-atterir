@@ -34,7 +34,7 @@ PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
 DATA_DIR = os.path.join(PROJECT_DIR, "data")
 OUTPUT_PATH = os.path.join(PROJECT_DIR, "supabase", "seed_real_data.sql")
 
-# Nuance → Bloc mapping (same as migration_v4_nuances_table.sql)
+# Nuance → Bloc mapping (same as baseline migration)
 NUANCE_BLOC = {
     "EXG": "Extrême-gauche", "LEXG": "Extrême-gauche", "DXG": "Extrême-gauche",
     "PG": "Gauche", "LPG": "Gauche", "FG": "Gauche",

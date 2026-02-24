@@ -179,7 +179,7 @@ def main():
     print(f"  Communes:   {unique_communes}")
     print(f"  Eq. types:  {unique_types}")
     print(f"\nTo import into Supabase:")
-    print(f"  1. First run migration_v6_equipments.sql (creates tables)")
+    print(f"  1. Apply migrations: supabase db push")
     print(f"  2. Then run this seed file:")
     print(f"     psql '<CONNECTION_STRING>' -f supabase/seed_commune_equipments.sql")
 

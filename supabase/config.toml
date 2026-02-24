@@ -1,0 +1,8 @@
+[project]
+id = "ouatterir"
+
+[db]
+major_version = 15
+
+[db.seed]
+sql_paths = ["./seed.sql"]
