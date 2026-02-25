@@ -61,12 +61,20 @@ export type EquipmentDomain = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
 
 export type PopulationSize = 'hameau' | 'village' | 'bourg' | 'petite_ville' | 'ville_moyenne' | 'grande_ville' | 'metropole';
 
+export type RiskLevel = 'peu_expose' | 'modere' | 'tres_expose';
+
+export interface RiskDetail {
+  numRisque: string;
+  libelleRisque: string;
+}
+
 export interface SearchFilters {
   department?: string;
   bloc?: PoliticalBloc;
   matchLevel?: MatchLevel;
   equipmentDomains?: EquipmentDomain[];
   populationSizes?: PopulationSize[];
+  riskLevel?: RiskLevel;
 }
 
 export interface EquipmentSummary {

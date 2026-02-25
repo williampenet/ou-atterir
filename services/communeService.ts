@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Commune, ElectionResult, StabilityLevel, IdealResult, PaginatedResults, SearchFilters, MatchLevel, EquipmentSummary, EquipmentDomain } from '../types';
+import { Commune, ElectionResult, StabilityLevel, IdealResult, PaginatedResults, SearchFilters, MatchLevel, EquipmentSummary, EquipmentDomain, RiskDetail } from '../types';
 
 // --------------------------------------------------
 // Row types (database shape)
@@ -196,6 +196,7 @@ export const searchCommunes = async (
   if (filters.matchLevel) rpcParams.target_match_level = filters.matchLevel;
   if (filters.equipmentDomains?.length) rpcParams.target_domains = filters.equipmentDomains;
   if (filters.populationSizes?.length) rpcParams.target_pop_ranges = filters.populationSizes;
+  if (filters.riskLevel) rpcParams.target_risk_level = filters.riskLevel;
 
   const countParams: Record<string, unknown> = {};
   if (filters.department) countParams.target_department = filters.department;
@@ -203,6 +204,7 @@ export const searchCommunes = async (
   if (filters.matchLevel) countParams.target_match_level = filters.matchLevel;
   if (filters.equipmentDomains?.length) countParams.target_domains = filters.equipmentDomains;
   if (filters.populationSizes?.length) countParams.target_pop_ranges = filters.populationSizes;
+  if (filters.riskLevel) countParams.target_risk_level = filters.riskLevel;
 
   const [resultsRes, countRes] = await Promise.all([
     supabase.rpc('search_communes', rpcParams),
@@ -240,5 +242,22 @@ export const getEquipmentSummary = async (insee: string): Promise<EquipmentSumma
     domain: row.domain as EquipmentDomain,
     domainLabel: row.domain_label,
     totalCount: row.total_count,
+  }));
+};
+
+// --------------------------------------------------
+// API: Risks for a commune
+// --------------------------------------------------
+
+export const getCommuneRisks = async (insee: string): Promise<RiskDetail[]> => {
+  const { data, error } = await supabase.rpc('get_commune_risques', {
+    target_insee: insee,
+  });
+
+  if (error || !data) return [];
+
+  return (data as { num_risque: string; libelle_risque: string }[]).map(row => ({
+    numRisque: row.num_risque,
+    libelleRisque: row.libelle_risque,
   }));
 };

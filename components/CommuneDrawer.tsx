@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Commune, EquipmentSummary, EquipmentDomain } from '../types';
-import { getCommuneByInsee, getEquipmentSummary } from '../services/communeService';
-import { EQUIPMENT_DOMAINS } from '../constants';
+import { Commune, EquipmentSummary, EquipmentDomain, RiskDetail, RiskLevel } from '../types';
+import { getCommuneByInsee, getEquipmentSummary, getCommuneRisks } from '../services/communeService';
+import { EQUIPMENT_DOMAINS, RISK_LEVELS } from '../constants';
 import CommuneCard from './CommuneCard';
-import { X, Building2, ShoppingBag, GraduationCap, Heart, Train, Dumbbell, Palmtree } from 'lucide-react';
+import { X, Building2, ShoppingBag, GraduationCap, Heart, Train, Dumbbell, Palmtree, AlertTriangle } from 'lucide-react';
 
 interface Props {
   commune: Commune;
@@ -19,17 +19,21 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
   const [fullCommune, setFullCommune] = useState<Commune | null>(null);
   const [loading, setLoading] = useState(true);
   const [equipments, setEquipments] = useState<EquipmentSummary[]>([]);
+  const [risks, setRisks] = useState<RiskDetail[]>([]);
 
   useEffect(() => {
     setLoading(true);
     setFullCommune(null);
     setEquipments([]);
+    setRisks([]);
     Promise.all([
       getCommuneByInsee(commune.insee),
       getEquipmentSummary(commune.insee),
-    ]).then(([data, eqs]) => {
+      getCommuneRisks(commune.insee),
+    ]).then(([data, eqs, rks]) => {
       setFullCommune(data ?? commune);
       setEquipments(eqs);
+      setRisks(rks);
       setLoading(false);
     });
   }, [commune.insee]);
@@ -76,6 +80,41 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
             commune={fullCommune ?? commune}
             loading={loading}
           />
+
+          {/* Risks summary */}
+          {!loading && (
+            <div className="mt-5 bg-slate-50 rounded-xl p-4 border border-slate-200">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Risques répertoriés</h4>
+                {(() => {
+                  const count = risks.length;
+                  const level: RiskLevel = count >= 5 ? 'tres_expose' : count >= 2 ? 'modere' : 'peu_expose';
+                  const config = RISK_LEVELS[level];
+                  return (
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${config.color}`}>
+                      <AlertTriangle className="w-2.5 h-2.5" />
+                      {config.label}
+                    </span>
+                  );
+                })()}
+              </div>
+              {risks.length === 0 ? (
+                <p className="text-xs text-slate-400">Aucun risque répertorié pour cette commune.</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {risks.map(r => (
+                    <span
+                      key={r.numRisque}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-white rounded-lg border border-slate-100 text-xs text-slate-600"
+                    >
+                      <AlertTriangle className="w-3 h-3 text-amber-500 flex-shrink-0" />
+                      {r.libelleRisque}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Equipment summary */}
           {equipments.length > 0 && (
