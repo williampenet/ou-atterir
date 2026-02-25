@@ -1,4 +1,4 @@
-import { PoliticalBloc, StabilityLevel, EquipmentDomain, PopulationSize } from './types';
+import { PoliticalBloc, StabilityLevel, EquipmentDomain, PopulationSize, RiskLevel } from './types';
 
 export const BLOC_COLORS: Record<string, string> = {
   [PoliticalBloc.EXTRÊME_GAUCHE]: '#b91c1c',
@@ -34,4 +34,10 @@ export const STABILITY_COLORS: Record<StabilityLevel, string> = {
   [StabilityLevel.STABLE]: 'bg-blue-100 text-blue-800 border-blue-200',
   [StabilityLevel.SWING]: 'bg-orange-100 text-orange-800 border-orange-200',
   [StabilityLevel.UNSTABLE]: 'bg-red-100 text-red-800 border-red-200',
+};
+
+export const RISK_LEVELS: Record<RiskLevel, { label: string; description: string; color: string }> = {
+  peu_expose: { label: 'Peu exposé', description: '0-1 risques', color: 'bg-emerald-50 border-emerald-300 text-emerald-700' },
+  modere: { label: 'Modéré', description: '2-4 risques', color: 'bg-amber-50 border-amber-300 text-amber-700' },
+  tres_expose: { label: 'Très exposé', description: '5+ risques', color: 'bg-red-50 border-red-300 text-red-700' },
 };

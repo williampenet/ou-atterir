@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { PoliticalBloc, SearchFilters, MatchLevel, EquipmentDomain, PopulationSize } from '../types';
-import { BLOC_COLORS, EQUIPMENT_DOMAINS, POPULATION_SIZES } from '../constants';
+import { PoliticalBloc, SearchFilters, MatchLevel, EquipmentDomain, PopulationSize, RiskLevel } from '../types';
+import { BLOC_COLORS, EQUIPMENT_DOMAINS, POPULATION_SIZES, RISK_LEVELS } from '../constants';
 import { getDepartments } from '../services/communeService';
-import { SlidersHorizontal, Shield, TrendingUp, Building2, ShoppingBag, GraduationCap, Heart, Train, Dumbbell, Palmtree, Users } from 'lucide-react';
+import { SlidersHorizontal, Shield, TrendingUp, Building2, ShoppingBag, GraduationCap, Heart, Train, Dumbbell, Palmtree, Users, AlertTriangle } from 'lucide-react';
 
 interface Props {
   onFiltersChange: (filters: SearchFilters) => void;
@@ -24,6 +24,7 @@ const FilterPanel: React.FC<Props> = ({ onFiltersChange }) => {
   const [matchLevel, setMatchLevel] = useState<MatchLevel | ''>('');
   const [selectedDomains, setSelectedDomains] = useState<EquipmentDomain[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<PopulationSize[]>([]);
+  const [riskLevel, setRiskLevel] = useState<RiskLevel | ''>('');
 
   useEffect(() => {
     getDepartments().then(setDepartments);
@@ -36,10 +37,11 @@ const FilterPanel: React.FC<Props> = ({ onFiltersChange }) => {
     if (matchLevel) filters.matchLevel = matchLevel as MatchLevel;
     if (selectedDomains.length > 0) filters.equipmentDomains = selectedDomains;
     if (selectedSizes.length > 0) filters.populationSizes = selectedSizes;
+    if (riskLevel) filters.riskLevel = riskLevel as RiskLevel;
     onFiltersChange(filters);
-  }, [department, bloc, matchLevel, selectedDomains, selectedSizes]);
+  }, [department, bloc, matchLevel, selectedDomains, selectedSizes, riskLevel]);
 
-  const activeCount = [department, bloc, matchLevel].filter(Boolean).length + selectedDomains.length + selectedSizes.length;
+  const activeCount = [department, bloc, matchLevel, riskLevel].filter(Boolean).length + selectedDomains.length + selectedSizes.length;
 
   const toggleDomain = (domain: EquipmentDomain) => {
     setSelectedDomains(prev =>
@@ -59,6 +61,7 @@ const FilterPanel: React.FC<Props> = ({ onFiltersChange }) => {
     setMatchLevel('');
     setSelectedDomains([]);
     setSelectedSizes([]);
+    setRiskLevel('');
   };
 
   return (
@@ -162,6 +165,29 @@ const FilterPanel: React.FC<Props> = ({ onFiltersChange }) => {
               >
                 <Icon className="w-3 h-3" />
                 {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Risk level filter */}
+      <div className="mt-3 pt-3 border-t border-slate-100">
+        <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Exposition aux risques</label>
+        <div className="flex flex-wrap gap-1.5">
+          {(Object.entries(RISK_LEVELS) as [RiskLevel, { label: string; description: string; color: string }][]).map(([key, { label, description, color }]) => {
+            const active = riskLevel === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setRiskLevel(riskLevel === key ? '' : key)}
+                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                  active ? color : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'
+                }`}
+              >
+                <AlertTriangle className="w-3 h-3" />
+                {label}
+                <span className="text-[10px] font-normal opacity-70">{description}</span>
               </button>
             );
           })}
