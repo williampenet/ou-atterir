@@ -1,0 +1,22 @@
+---
+description: Core project conventions for Ou Atterir
+alwaysApply: true
+---
+
+# Projet Ou Atterir - Conventions
+
+## Git
+- Toujours commiter et pusher les changements a la fin d'une tache, sans attendre que l'utilisateur le demande.
+- Messages de commit en anglais, format conventionnel (feat/fix/refactor/chore).
+
+## Code
+- Code propre, scalable et raisonnable. Pas de sur-ingenierie, pas de raccourcis.
+- Suivre les patterns existants du projet (service layer, RPC functions, composants Tailwind).
+
+## Data & SQL
+- Ce projet est un outil de data analyse destine a un grand nombre d'utilisateurs.
+- Il va integrer de tres nombreux filtres et de tres nombreuses sources de donnees.
+- Les tables SQL doivent etre concues pour la perennite : index pertinents, vues materialisees pour les requetes couteuses, cles primaires composites quand necessaire.
+- Les fonctions RPC (search_communes, count_communes) sont le point central de filtrage. Chaque nouveau filtre s'y ajoute comme parametre optionnel avec clause AND dans le WHERE.
+- Privilegier les vues materialisees pre-calculees pour les jointures couteuses plutot que des sous-requetes dynamiques dans les RPC.
+- Toujours tester les performances des requetes avec des filtres actifs avant de valider.
