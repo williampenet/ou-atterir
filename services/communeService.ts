@@ -189,6 +189,7 @@ export const searchCommunes = async (
   const rpcParams: Record<string, unknown> = {
     page_limit: pageSize,
     page_offset: offset,
+    target_risk_level: filters.riskLevel ?? null,
   };
 
   if (filters.department) rpcParams.target_department = filters.department;
@@ -196,15 +197,15 @@ export const searchCommunes = async (
   if (filters.matchLevel) rpcParams.target_match_level = filters.matchLevel;
   if (filters.equipmentDomains?.length) rpcParams.target_domains = filters.equipmentDomains;
   if (filters.populationSizes?.length) rpcParams.target_pop_ranges = filters.populationSizes;
-  if (filters.riskLevel) rpcParams.target_risk_level = filters.riskLevel;
 
-  const countParams: Record<string, unknown> = {};
+  const countParams: Record<string, unknown> = {
+    target_risk_level: filters.riskLevel ?? null,
+  };
   if (filters.department) countParams.target_department = filters.department;
   if (filters.bloc) countParams.target_bloc = filters.bloc;
   if (filters.matchLevel) countParams.target_match_level = filters.matchLevel;
   if (filters.equipmentDomains?.length) countParams.target_domains = filters.equipmentDomains;
   if (filters.populationSizes?.length) countParams.target_pop_ranges = filters.populationSizes;
-  if (filters.riskLevel) countParams.target_risk_level = filters.riskLevel;
 
   const [resultsRes, countRes] = await Promise.all([
     supabase.rpc('search_communes', rpcParams),

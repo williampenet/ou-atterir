@@ -68,6 +68,8 @@ $$ LANGUAGE plpgsql STABLE;
 -- 5. Update search_communes to support risk_level filter
 -- ==========================================================
 
+DROP FUNCTION IF EXISTS search_communes(text, text, text, text[], text[], int, int);
+
 CREATE OR REPLACE FUNCTION search_communes(
   target_department text DEFAULT NULL,
   target_bloc text DEFAULT NULL,
@@ -223,6 +225,8 @@ $$ LANGUAGE plpgsql STABLE;
 -- ==========================================================
 -- 6. Update count_communes to support risk_level filter
 -- ==========================================================
+
+DROP FUNCTION IF EXISTS count_communes(text, text, text, text[], text[]);
 
 CREATE OR REPLACE FUNCTION count_communes(
   target_department text DEFAULT NULL,
