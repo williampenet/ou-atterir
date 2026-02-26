@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Info, SlidersHorizontal, X, MapPin, Filter, BarChart3 } from 'lucide-react';
+import { Info, SlidersHorizontal, X, Filter, BarChart3 } from 'lucide-react';
 import { searchCommunes } from './services/communeService';
 import { Commune, IdealResult, PaginatedResults, SearchFilters } from './types';
 import FilterSheet from './components/FilterSheet';
@@ -115,7 +115,7 @@ const App: React.FC = () => {
               <p className="text-sm text-slate-600 leading-relaxed mb-4">
                 <strong>Ou Atterir</strong> croise les donnees publiques (equipements, stabilite politique, demographie, immobilier, risques naturels…) pour vous aider a identifier les communes francaises ou il fait bon vivre, travailler ou s'installer.
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex items-start gap-2.5 p-3 rounded-xl bg-indigo-50/60">
                   <Filter className="w-4 h-4 text-indigo-600 mt-0.5 shrink-0" />
                   <div>
@@ -128,13 +128,6 @@ const App: React.FC = () => {
                   <div>
                     <p className="text-xs font-semibold text-slate-800">Comparez</p>
                     <p className="text-xs text-slate-500">Scores, prix immobiliers, services de proximite</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-pink-50/60">
-                  <MapPin className="w-4 h-4 text-pink-600 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-xs font-semibold text-slate-800">Explorez</p>
-                    <p className="text-xs text-slate-500">Fiches detaillees, carte et analyse IA</p>
                   </div>
                 </div>
               </div>
