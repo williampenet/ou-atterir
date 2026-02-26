@@ -1,0 +1,21 @@
+---
+description: Product roadmap for upcoming features
+alwaysApply: true
+---
+
+# Roadmap
+
+Prochains ajouts prevus, a garder en tete pour orienter les choix d'architecture :
+
+1. **Notice explicative** : courte description en haut de la liste des communes pour expliquer le principe de l'app.
+
+2. **Vue carte / liste** : ajout d'une carte interactive et possibilite de basculer entre vue liste et vue carte.
+
+3. **Couverture tres haut debit** : fibre / 4G / 5G par commune. Source ARCEP Open Data. Critere decisif pour les teletravailleurs.
+
+4. **Accessibilite multimodale** : temps de trajet vers la gare TGV / aeroport le plus proche. Enrichit la BPE existante avec des donnees de distance.
+
+5. **Projection climatique 2030-2100** : integration des donnees Climadiag Commune de Meteo-France (acces gratuit, par commune) :
+   - Nombre de jours de vague de chaleur en 2030 / 2050 / 2100
+   - Evolution des jours sans precipitation (stress hydrique)
+   - Impact projete sur la sante, l'agriculture et le tourisme local
