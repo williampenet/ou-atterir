@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { PoliticalBloc, SearchFilters, MatchLevel, EquipmentFilterKey, PopulationSize, RiskLevel } from '../types';
-import { BLOC_COLORS, EQUIPMENT_CATEGORIES, POPULATION_SIZES, RISK_LEVELS } from '../constants';
+import { PoliticalBloc, SearchFilters, MatchLevel, EquipmentFilterKey, PopulationSize, RiskLevel, GeoTag } from '../types';
+import { BLOC_COLORS, EQUIPMENT_CATEGORIES, POPULATION_SIZES, RISK_LEVELS, GEO_TAGS } from '../constants';
 import { getDepartments } from '../services/communeService';
 import {
   X, SlidersHorizontal, Shield, TrendingUp,
   ShoppingBag, GraduationCap, Heart, Train, Dumbbell,
   Users, AlertTriangle, ChevronDown, Check,
+  Waves, Mountain, TreePine,
 } from 'lucide-react';
 
 interface Props {
@@ -29,6 +30,12 @@ const CATEGORY_ICONS: Record<string, React.FC<{ className?: string }>> = {
   ShoppingBag, GraduationCap, Heart, Train, Dumbbell,
 };
 
+const GEO_TAG_ICONS: Record<GeoTag, React.ReactNode> = {
+  littoral: <Waves className="w-3.5 h-3.5" />,
+  montagne: <Mountain className="w-3.5 h-3.5" />,
+  campagne: <TreePine className="w-3.5 h-3.5" />,
+};
+
 const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose, resultCount }) => {
   const [departments, setDepartments] = useState<string[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
@@ -39,6 +46,7 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
   const selectedEquipment = filters.equipmentFilters ?? [];
   const selectedSizes = filters.populationSizes ?? [];
   const riskLevel = (filters.riskLevel as string) ?? '';
+  const selectedGeoTags = filters.geoTags ?? [];
 
   useEffect(() => {
     getDepartments().then(setDepartments);
@@ -69,6 +77,13 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
     update({ equipmentFilters: next.length ? next : undefined });
   };
 
+  const toggleGeoTag = (tag: GeoTag) => {
+    const next = selectedGeoTags.includes(tag)
+      ? selectedGeoTags.filter(t => t !== tag)
+      : [...selectedGeoTags, tag];
+    update({ geoTags: next.length ? next : undefined });
+  };
+
   const toggleSize = (size: PopulationSize) => {
     const next = selectedSizes.includes(size)
       ? selectedSizes.filter(s => s !== size)
@@ -87,7 +102,8 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
   const activeCount =
     [department, bloc, matchLevel, riskLevel].filter(Boolean).length +
     selectedEquipment.length +
-    selectedSizes.length;
+    selectedSizes.length +
+    selectedGeoTags.length;
 
   const handleReset = () => {
     onFiltersChange({});
@@ -268,6 +284,24 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
                   activeClass={color}
                 >
                   <AlertTriangle className="w-3.5 h-3.5" />
+                  {label}
+                  <span className="text-[10px] font-normal opacity-70">{description}</span>
+                </ToggleButton>
+              ))}
+            </div>
+          </Section>
+
+          {/* Geographical tags */}
+          <Section label="Cadre géographique">
+            <div className="flex flex-wrap gap-2">
+              {(Object.entries(GEO_TAGS) as [GeoTag, { label: string; description: string; color: string }][]).map(([key, { label, description, color }]) => (
+                <ToggleButton
+                  key={key}
+                  active={selectedGeoTags.includes(key)}
+                  onClick={() => toggleGeoTag(key)}
+                  activeClass={color}
+                >
+                  {GEO_TAG_ICONS[key]}
                   {label}
                   <span className="text-[10px] font-normal opacity-70">{description}</span>
                 </ToggleButton>

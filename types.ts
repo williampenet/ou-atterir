@@ -78,6 +78,8 @@ export type PopulationSize = 'hameau' | 'village' | 'bourg' | 'petite_ville' | '
 
 export type RiskLevel = 'peu_expose' | 'modere' | 'tres_expose';
 
+export type GeoTag = 'littoral' | 'montagne' | 'campagne';
+
 export interface RiskDetail {
   numRisque: string;
   libelleRisque: string;
@@ -90,6 +92,7 @@ export interface SearchFilters {
   equipmentFilters?: EquipmentFilterKey[];
   populationSizes?: PopulationSize[];
   riskLevel?: RiskLevel;
+  geoTags?: GeoTag[];
 }
 
 export interface EquipmentSummary {

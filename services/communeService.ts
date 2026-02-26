@@ -197,6 +197,7 @@ export const searchCommunes = async (
   if (filters.matchLevel) rpcParams.target_match_level = filters.matchLevel;
   if (filters.equipmentFilters?.length) rpcParams.target_equipment_filters = filters.equipmentFilters;
   if (filters.populationSizes?.length) rpcParams.target_pop_ranges = filters.populationSizes;
+  if (filters.geoTags?.length) rpcParams.target_geo_tags = filters.geoTags;
 
   const countParams: Record<string, unknown> = {
     target_risk_level: filters.riskLevel ?? null,
@@ -206,6 +207,7 @@ export const searchCommunes = async (
   if (filters.matchLevel) countParams.target_match_level = filters.matchLevel;
   if (filters.equipmentFilters?.length) countParams.target_equipment_filters = filters.equipmentFilters;
   if (filters.populationSizes?.length) countParams.target_pop_ranges = filters.populationSizes;
+  if (filters.geoTags?.length) countParams.target_geo_tags = filters.geoTags;
 
   const [resultsRes, countRes] = await Promise.all([
     supabase.rpc('search_communes', rpcParams),

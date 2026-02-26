@@ -41,7 +41,8 @@ const App: React.FC = () => {
   const activeFilterCount =
     [filters.department, filters.bloc, filters.matchLevel, filters.riskLevel].filter(Boolean).length +
     (filters.equipmentFilters?.length ?? 0) +
-    (filters.populationSizes?.length ?? 0);
+    (filters.populationSizes?.length ?? 0) +
+    (filters.geoTags?.length ?? 0);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-100 font-sans">
