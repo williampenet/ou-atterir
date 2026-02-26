@@ -1,4 +1,4 @@
-import { PoliticalBloc, StabilityLevel, EquipmentDomain, EquipmentCategory, PopulationSize, RiskLevel, GeoTag } from './types';
+import { PoliticalBloc, StabilityLevel, EquipmentDomain, EquipmentCategory, PopulationSize, RiskLevel, GeoTag, MarketTension } from './types';
 
 export const BLOC_COLORS: Record<string, string> = {
   [PoliticalBloc.EXTRÊME_GAUCHE]: '#b91c1c',
@@ -74,3 +74,17 @@ export const RISK_LEVELS: Record<RiskLevel, { label: string; description: string
   modere: { label: 'Modéré', description: '2-4 risques', color: 'bg-amber-50 border-amber-300 text-amber-700' },
   tres_expose: { label: 'Très exposé', description: '5+ risques', color: 'bg-red-50 border-red-300 text-red-700' },
 };
+
+export const MARKET_TENSION_LEVELS: Record<MarketTension, { label: string; color: string }> = {
+  calme: { label: 'Calme', color: 'bg-emerald-50 border-emerald-300 text-emerald-700' },
+  actif: { label: 'Actif', color: 'bg-amber-50 border-amber-300 text-amber-700' },
+  tendu: { label: 'Tendu', color: 'bg-red-50 border-red-300 text-red-700' },
+};
+
+export const PRIX_M2_RANGES = [
+  { key: 1500, label: '< 1 500 €/m²' },
+  { key: 2500, label: '< 2 500 €/m²' },
+  { key: 3500, label: '< 3 500 €/m²' },
+  { key: 5000, label: '< 5 000 €/m²' },
+  { key: 99999, label: '> 5 000 €/m²' },
+];

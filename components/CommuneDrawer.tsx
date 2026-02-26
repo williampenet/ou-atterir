@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Commune, EquipmentSummary, EquipmentDomain, RiskDetail, RiskLevel } from '../types';
-import { getCommuneByInsee, getEquipmentSummary, getCommuneRisks } from '../services/communeService';
+import { Commune, EquipmentSummary, EquipmentDomain, RiskDetail, RiskLevel, DvfData } from '../types';
+import { getCommuneByInsee, getEquipmentSummary, getCommuneRisks, getDvfStats } from '../services/communeService';
 import { EQUIPMENT_DOMAINS, RISK_LEVELS } from '../constants';
 import CommuneCard from './CommuneCard';
+import DvfChart from './DvfChart';
 import { X, ShoppingBag, GraduationCap, Heart, Train, Dumbbell, AlertTriangle } from 'lucide-react';
 
 interface Props {
@@ -20,20 +21,24 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
   const [loading, setLoading] = useState(true);
   const [equipments, setEquipments] = useState<EquipmentSummary[]>([]);
   const [risks, setRisks] = useState<RiskDetail[]>([]);
+  const [dvfData, setDvfData] = useState<DvfData | null>(null);
 
   useEffect(() => {
     setLoading(true);
     setFullCommune(null);
     setEquipments([]);
     setRisks([]);
+    setDvfData(null);
     Promise.all([
       getCommuneByInsee(commune.insee),
       getEquipmentSummary(commune.insee),
       getCommuneRisks(commune.insee),
-    ]).then(([data, eqs, rks]) => {
+      getDvfStats(commune.insee),
+    ]).then(([data, eqs, rks, dvf]) => {
       setFullCommune(data ?? commune);
       setEquipments(eqs);
       setRisks(rks);
+      setDvfData(dvf);
       setLoading(false);
     });
   }, [commune.insee]);
@@ -115,6 +120,9 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
               )}
             </div>
           )}
+
+          {/* DVF market data */}
+          {!loading && dvfData && <DvfChart dvfData={dvfData} />}
 
           {/* Equipment summary */}
           {equipments.length > 0 && (
