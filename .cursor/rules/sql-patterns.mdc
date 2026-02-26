@@ -1,0 +1,20 @@
+---
+description: SQL and Supabase patterns for data-heavy filtering
+globs: supabase/**/*.sql
+alwaysApply: false
+---
+
+# SQL Patterns
+
+## Nouveau filtre
+1. Creer la table de donnees avec index sur code_insee
+2. Si la requete de filtrage necessite une aggregation ou un scan lourd, creer une vue materialisee pre-calculee avec index
+3. Ajouter le parametre `target_xxx DEFAULT NULL` aux fonctions `search_communes` et `count_communes`
+4. Clause : `AND (target_xxx IS NULL OR EXISTS (SELECT 1 FROM vue_materialisee WHERE ...))`
+5. DROP l'ancienne signature avant le CREATE OR REPLACE
+
+## Performance
+- Toujours utiliser EXISTS plutot que IN pour les sous-requetes de filtrage
+- Indexer les colonnes utilisees dans les clauses WHERE et JOIN
+- Les vues materialisees doivent avoir un UNIQUE INDEX sur code_insee pour permettre REFRESH CONCURRENTLY
+- Tester chaque filtre individuellement avec EXPLAIN ANALYZE avant mise en production
