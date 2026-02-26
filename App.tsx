@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Info } from 'lucide-react';
+import { Info, SlidersHorizontal } from 'lucide-react';
 import { searchCommunes } from './services/communeService';
 import { Commune, IdealResult, PaginatedResults, SearchFilters } from './types';
-import FilterPanel from './components/FilterPanel';
+import FilterSheet from './components/FilterSheet';
 import ResultsList from './components/ResultsList';
 import CommuneDrawer from './components/CommuneDrawer';
 
@@ -11,6 +11,7 @@ const App: React.FC = () => {
   const [results, setResults] = useState<PaginatedResults<IdealResult> | null>(null);
   const [selectedCommune, setSelectedCommune] = useState<Commune | null>(null);
   const [loading, setLoading] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const filtersRef = useRef(filters);
   const searchIdRef = useRef(0);
 
@@ -37,6 +38,12 @@ const App: React.FC = () => {
     doSearch(filtersRef.current, page);
   };
 
+  const activeFilterCount =
+    [filters.department, filters.bloc, filters.matchLevel, filters.riskLevel].filter(Boolean).length +
+    (filters.equipmentFilters?.length ?? 0) +
+    (filters.populationSizes?.length ?? 0) +
+    (filters.geoTags?.length ?? 0);
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-100 font-sans">
 
@@ -57,17 +64,28 @@ const App: React.FC = () => {
               <span className="text-indigo-600 text-xs font-medium px-2 py-0.5 bg-indigo-50 rounded-full ml-1.5 align-middle">MVP</span>
             </h1>
           </div>
-          <button className="text-slate-400 hover:text-slate-600 transition-colors">
-            <Info className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setFiltersOpen(true)}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold border border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-700 transition-all bg-white"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              Filtres
+              {activeFilterCount > 0 && (
+                <span className="text-[10px] font-bold bg-indigo-600 text-white px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+            <button className="text-slate-400 hover:text-slate-600 transition-colors">
+              <Info className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow max-w-4xl mx-auto w-full px-4 py-6 space-y-4">
-
-        <FilterPanel onFiltersChange={setFilters} />
-
+      <main className="flex-grow max-w-4xl mx-auto w-full px-4 py-6 space-y-4 pb-24 sm:pb-6">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 bg-white/50 rounded-2xl border border-dashed border-slate-300">
             <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
@@ -81,8 +99,32 @@ const App: React.FC = () => {
             onPageChange={handlePageChange}
           />
         ) : null}
-
       </main>
+
+      {/* Mobile floating filter button */}
+      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 sm:hidden">
+        <button
+          onClick={() => setFiltersOpen(true)}
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition-all"
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+          Filtres
+          {activeFilterCount > 0 && (
+            <span className="text-[10px] font-bold bg-white text-indigo-600 px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Filter sheet */}
+      <FilterSheet
+        filters={filters}
+        onFiltersChange={setFilters}
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        resultCount={results?.total}
+      />
 
       {/* Detail drawer */}
       {selectedCommune && (

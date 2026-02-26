@@ -57,11 +57,28 @@ export interface PaginatedResults<T> {
   hasMore: boolean;
 }
 
-export type EquipmentDomain = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
+export type EquipmentDomain = 'B' | 'C' | 'D' | 'E' | 'F';
+
+export type EquipmentFilterKey =
+  | 'commerces'
+  | 'ecole' | 'college' | 'lycee' | 'sup'
+  | 'etab_sante' | 'prof_med' | 'creche'
+  | 'transports'
+  | 'sport' | 'culture';
+
+export interface EquipmentCategory {
+  id: string;
+  label: string;
+  icon: string;
+  filterKey?: EquipmentFilterKey;
+  children?: { id: EquipmentFilterKey; label: string }[];
+}
 
 export type PopulationSize = 'hameau' | 'village' | 'bourg' | 'petite_ville' | 'ville_moyenne' | 'grande_ville' | 'metropole';
 
 export type RiskLevel = 'peu_expose' | 'modere' | 'tres_expose';
+
+export type GeoTag = 'littoral' | 'montagne' | 'campagne';
 
 export interface RiskDetail {
   numRisque: string;
@@ -72,9 +89,10 @@ export interface SearchFilters {
   department?: string;
   bloc?: PoliticalBloc;
   matchLevel?: MatchLevel;
-  equipmentDomains?: EquipmentDomain[];
+  equipmentFilters?: EquipmentFilterKey[];
   populationSizes?: PopulationSize[];
   riskLevel?: RiskLevel;
+  geoTags?: GeoTag[];
 }
 
 export interface EquipmentSummary {

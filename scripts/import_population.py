@@ -13,6 +13,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
 OUTPUT_SQL = os.path.join(PROJECT_DIR, "supabase", "seed_population.sql")
 API_URL = "https://geo.api.gouv.fr/communes?fields=population&format=json"
+PLM_CITIES = {"75056": "Paris", "69123": "Lyon", "13055": "Marseille"}
 BATCH_SIZE = 500
 
 
@@ -26,7 +27,17 @@ def main():
         for c in data
         if "population" in c and c.get("population") is not None
     ]
-    print(f"  {len(pairs)} communes with population data")
+
+    # Also fetch PLM arrondissement populations
+    for city_code, name in PLM_CITIES.items():
+        url = f"https://geo.api.gouv.fr/communes?codeParent={city_code}&type=arrondissement-municipal&fields=population&format=json"
+        with urllib.request.urlopen(url) as resp:
+            arr_data = json.loads(resp.read().decode())
+        arr_pairs = [(a["code"], a["population"]) for a in arr_data if a.get("population") is not None]
+        pairs.extend(arr_pairs)
+        print(f"  {name}: {len(arr_pairs)} arrondissements")
+
+    print(f"  {len(pairs)} communes with population data (incl. PLM arrondissements)")
 
     print(f"Writing SQL to {OUTPUT_SQL}...")
     with open(OUTPUT_SQL, "w") as f:

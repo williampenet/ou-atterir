@@ -1,80 +1,21 @@
 -- ==========================================================
--- Ou Atterir — Géorisques migration
--- Adds risk data per commune from Géorisques API
+-- Ou Atterir — Equipment subcategory filters
+-- Replaces domain-level filtering with granular filter keys
 -- ==========================================================
 
 BEGIN;
 
 -- ==========================================================
--- 1. Table: commune_risques
+-- 1. Replace search_communes: target_domains → target_equipment_filters
 -- ==========================================================
 
-CREATE TABLE IF NOT EXISTS commune_risques (
-  code_insee text NOT NULL,
-  num_risque text NOT NULL,
-  libelle_risque text NOT NULL,
-  PRIMARY KEY (code_insee, num_risque)
-);
-
-CREATE INDEX IF NOT EXISTS idx_commune_risques_insee ON commune_risques(code_insee);
-
--- ==========================================================
--- 2. Materialized view: risk summary per commune
--- ==========================================================
-
-CREATE MATERIALIZED VIEW IF NOT EXISTS commune_risk_summary AS
-SELECT
-  code_insee,
-  COUNT(DISTINCT num_risque) AS risk_count,
-  CASE
-    WHEN COUNT(DISTINCT num_risque) >= 5 THEN 'tres_expose'
-    WHEN COUNT(DISTINCT num_risque) >= 2 THEN 'modere'
-    ELSE 'peu_expose'
-  END AS risk_level
-FROM commune_risques
-GROUP BY code_insee;
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_risk_summary_insee ON commune_risk_summary(code_insee);
-CREATE INDEX IF NOT EXISTS idx_risk_summary_level ON commune_risk_summary(risk_level);
-
--- ==========================================================
--- 3. RLS
--- ==========================================================
-
-ALTER TABLE commune_risques ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Allow public read on commune_risques"
-  ON commune_risques FOR SELECT TO anon USING (true);
-
--- ==========================================================
--- 4. RPC: get risks for a single commune
--- ==========================================================
-
-CREATE OR REPLACE FUNCTION get_commune_risques(target_insee text)
-RETURNS TABLE (
-  num_risque text,
-  libelle_risque text
-) AS $$
-BEGIN
-  RETURN QUERY
-  SELECT cr.num_risque, cr.libelle_risque
-  FROM commune_risques cr
-  WHERE cr.code_insee = target_insee
-  ORDER BY cr.num_risque;
-END;
-$$ LANGUAGE plpgsql STABLE;
-
--- ==========================================================
--- 5. Update search_communes to support risk_level filter
--- ==========================================================
-
-DROP FUNCTION IF EXISTS search_communes(text, text, text, text[], text[], int, int);
+DROP FUNCTION IF EXISTS search_communes(text, text, text, text[], text[], text, int, int);
 
 CREATE OR REPLACE FUNCTION search_communes(
   target_department text DEFAULT NULL,
   target_bloc text DEFAULT NULL,
   target_match_level text DEFAULT NULL,
-  target_domains text[] DEFAULT NULL,
+  target_equipment_filters text[] DEFAULT NULL,
   target_pop_ranges text[] DEFAULT NULL,
   target_risk_level text DEFAULT NULL,
   page_limit int DEFAULT 30,
@@ -123,13 +64,28 @@ BEGIN
     JOIN election_results er ON er.commune_id = c.id
     LEFT JOIN nuances n ON n.code = er.winner_nuance
     WHERE (target_department IS NULL OR c.department = target_department)
-      AND (target_domains IS NULL OR NOT EXISTS (
-        SELECT unnest(target_domains) AS d
-        EXCEPT
-        SELECT DISTINCT et.domain
-        FROM commune_equipments ce
-        JOIN equipment_types et ON et.code = ce.typequ
-        WHERE ce.insee = c.insee
+      AND (target_equipment_filters IS NULL OR NOT EXISTS (
+        SELECT f.fk
+        FROM unnest(target_equipment_filters) AS f(fk)
+        WHERE NOT EXISTS (
+          SELECT 1
+          FROM commune_equipments ce
+          JOIN equipment_types et ON et.code = ce.typequ
+          WHERE ce.insee = c.insee
+            AND (
+              (f.fk = 'commerces' AND et.domain = 'B')
+              OR (f.fk = 'ecole' AND et.subdomain = 'C1')
+              OR (f.fk = 'college' AND et.subdomain = 'C2')
+              OR (f.fk = 'lycee' AND et.subdomain = 'C3')
+              OR (f.fk = 'sup' AND et.subdomain IN ('C4', 'C5'))
+              OR (f.fk = 'etab_sante' AND et.subdomain = 'D1')
+              OR (f.fk = 'prof_med' AND et.subdomain = 'D2')
+              OR (f.fk = 'creche' AND et.code = 'D502')
+              OR (f.fk = 'transports' AND et.domain = 'E')
+              OR (f.fk = 'sport' AND et.subdomain = 'F1')
+              OR (f.fk = 'culture' AND et.subdomain = 'F3')
+            )
+        )
       ))
       AND (target_pop_ranges IS NULL OR (
         (c.population < 200 AND 'hameau' = ANY(target_pop_ranges)) OR
@@ -223,16 +179,16 @@ END;
 $$ LANGUAGE plpgsql STABLE;
 
 -- ==========================================================
--- 6. Update count_communes to support risk_level filter
+-- 2. Replace count_communes
 -- ==========================================================
 
-DROP FUNCTION IF EXISTS count_communes(text, text, text, text[], text[]);
+DROP FUNCTION IF EXISTS count_communes(text, text, text, text[], text[], text);
 
 CREATE OR REPLACE FUNCTION count_communes(
   target_department text DEFAULT NULL,
   target_bloc text DEFAULT NULL,
   target_match_level text DEFAULT NULL,
-  target_domains text[] DEFAULT NULL,
+  target_equipment_filters text[] DEFAULT NULL,
   target_pop_ranges text[] DEFAULT NULL,
   target_risk_level text DEFAULT NULL
 )
@@ -254,13 +210,28 @@ BEGIN
     JOIN election_results er ON er.commune_id = c.id
     LEFT JOIN nuances n ON n.code = er.winner_nuance
     WHERE (target_department IS NULL OR c.department = target_department)
-      AND (target_domains IS NULL OR NOT EXISTS (
-        SELECT unnest(target_domains) AS d
-        EXCEPT
-        SELECT DISTINCT et.domain
-        FROM commune_equipments ce
-        JOIN equipment_types et ON et.code = ce.typequ
-        WHERE ce.insee = c.insee
+      AND (target_equipment_filters IS NULL OR NOT EXISTS (
+        SELECT f.fk
+        FROM unnest(target_equipment_filters) AS f(fk)
+        WHERE NOT EXISTS (
+          SELECT 1
+          FROM commune_equipments ce
+          JOIN equipment_types et ON et.code = ce.typequ
+          WHERE ce.insee = c.insee
+            AND (
+              (f.fk = 'commerces' AND et.domain = 'B')
+              OR (f.fk = 'ecole' AND et.subdomain = 'C1')
+              OR (f.fk = 'college' AND et.subdomain = 'C2')
+              OR (f.fk = 'lycee' AND et.subdomain = 'C3')
+              OR (f.fk = 'sup' AND et.subdomain IN ('C4', 'C5'))
+              OR (f.fk = 'etab_sante' AND et.subdomain = 'D1')
+              OR (f.fk = 'prof_med' AND et.subdomain = 'D2')
+              OR (f.fk = 'creche' AND et.code = 'D502')
+              OR (f.fk = 'transports' AND et.domain = 'E')
+              OR (f.fk = 'sport' AND et.subdomain = 'F1')
+              OR (f.fk = 'culture' AND et.subdomain = 'F3')
+            )
+        )
       ))
       AND (target_pop_ranges IS NULL OR (
         (c.population < 200 AND 'hameau' = ANY(target_pop_ranges)) OR
@@ -308,6 +279,31 @@ BEGIN
     AND (target_match_level IS NULL OR classified.match_level = target_match_level);
 
   RETURN result;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+-- ==========================================================
+-- 3. Update get_commune_equipments: exclude removed domains
+-- ==========================================================
+
+CREATE OR REPLACE FUNCTION get_commune_equipments(target_insee text)
+RETURNS TABLE (
+  domain char(1),
+  domain_label text,
+  total_count bigint
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    et.domain,
+    et.domain_label,
+    SUM(ce.nb)::bigint AS total_count
+  FROM commune_equipments ce
+  JOIN equipment_types et ON et.code = ce.typequ
+  WHERE ce.insee = target_insee
+    AND et.domain IN ('B', 'C', 'D', 'E', 'F')
+  GROUP BY et.domain, et.domain_label
+  ORDER BY et.domain;
 END;
 $$ LANGUAGE plpgsql STABLE;
 

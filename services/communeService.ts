@@ -189,22 +189,25 @@ export const searchCommunes = async (
   const rpcParams: Record<string, unknown> = {
     page_limit: pageSize,
     page_offset: offset,
+    target_risk_level: filters.riskLevel ?? null,
   };
 
   if (filters.department) rpcParams.target_department = filters.department;
   if (filters.bloc) rpcParams.target_bloc = filters.bloc;
   if (filters.matchLevel) rpcParams.target_match_level = filters.matchLevel;
-  if (filters.equipmentDomains?.length) rpcParams.target_domains = filters.equipmentDomains;
+  if (filters.equipmentFilters?.length) rpcParams.target_equipment_filters = filters.equipmentFilters;
   if (filters.populationSizes?.length) rpcParams.target_pop_ranges = filters.populationSizes;
-  if (filters.riskLevel) rpcParams.target_risk_level = filters.riskLevel;
+  if (filters.geoTags?.length) rpcParams.target_geo_tags = filters.geoTags;
 
-  const countParams: Record<string, unknown> = {};
+  const countParams: Record<string, unknown> = {
+    target_risk_level: filters.riskLevel ?? null,
+  };
   if (filters.department) countParams.target_department = filters.department;
   if (filters.bloc) countParams.target_bloc = filters.bloc;
   if (filters.matchLevel) countParams.target_match_level = filters.matchLevel;
-  if (filters.equipmentDomains?.length) countParams.target_domains = filters.equipmentDomains;
+  if (filters.equipmentFilters?.length) countParams.target_equipment_filters = filters.equipmentFilters;
   if (filters.populationSizes?.length) countParams.target_pop_ranges = filters.populationSizes;
-  if (filters.riskLevel) countParams.target_risk_level = filters.riskLevel;
+  if (filters.geoTags?.length) countParams.target_geo_tags = filters.geoTags;
 
   const [resultsRes, countRes] = await Promise.all([
     supabase.rpc('search_communes', rpcParams),

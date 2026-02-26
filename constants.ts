@@ -1,4 +1,4 @@
-import { PoliticalBloc, StabilityLevel, EquipmentDomain, PopulationSize, RiskLevel } from './types';
+import { PoliticalBloc, StabilityLevel, EquipmentDomain, EquipmentCategory, PopulationSize, RiskLevel, GeoTag } from './types';
 
 export const BLOC_COLORS: Record<string, string> = {
   [PoliticalBloc.EXTRÊME_GAUCHE]: '#b91c1c',
@@ -10,14 +10,41 @@ export const BLOC_COLORS: Record<string, string> = {
 };
 
 export const EQUIPMENT_DOMAINS: Record<EquipmentDomain, { label: string; icon: string }> = {
-  A: { label: 'Services', icon: 'Building2' },
   B: { label: 'Commerces', icon: 'ShoppingBag' },
   C: { label: 'Enseignement', icon: 'GraduationCap' },
   D: { label: 'Santé', icon: 'Heart' },
   E: { label: 'Transports', icon: 'Train' },
   F: { label: 'Sports & Culture', icon: 'Dumbbell' },
-  G: { label: 'Tourisme', icon: 'Palmtree' },
 };
+
+export const EQUIPMENT_CATEGORIES: EquipmentCategory[] = [
+  { id: 'B', label: 'Commerces', icon: 'ShoppingBag', filterKey: 'commerces' },
+  {
+    id: 'C', label: 'Enseignement', icon: 'GraduationCap',
+    children: [
+      { id: 'ecole', label: 'École (maternelle, primaire, élémentaire)' },
+      { id: 'college', label: 'Collège' },
+      { id: 'lycee', label: 'Lycée' },
+      { id: 'sup', label: 'Enseignement supérieur' },
+    ],
+  },
+  {
+    id: 'D', label: 'Santé', icon: 'Heart',
+    children: [
+      { id: 'etab_sante', label: 'Établissements de santé' },
+      { id: 'prof_med', label: 'Professions médicales libérales' },
+      { id: 'creche', label: 'Crèche' },
+    ],
+  },
+  { id: 'E', label: 'Transports', icon: 'Train', filterKey: 'transports' },
+  {
+    id: 'F', label: 'Sports, loisirs & culture', icon: 'Dumbbell',
+    children: [
+      { id: 'sport', label: 'Équipements sportifs' },
+      { id: 'culture', label: 'Équipements culturels' },
+    ],
+  },
+];
 
 export const POPULATION_SIZES: Record<PopulationSize, { label: string; min: number; max: number }> = {
   hameau: { label: 'Hameau', min: 0, max: 200 },
@@ -34,6 +61,12 @@ export const STABILITY_COLORS: Record<StabilityLevel, string> = {
   [StabilityLevel.STABLE]: 'bg-blue-100 text-blue-800 border-blue-200',
   [StabilityLevel.SWING]: 'bg-orange-100 text-orange-800 border-orange-200',
   [StabilityLevel.UNSTABLE]: 'bg-red-100 text-red-800 border-red-200',
+};
+
+export const GEO_TAGS: Record<GeoTag, { label: string; description: string; color: string }> = {
+  littoral: { label: 'Littoral', description: 'Bord de mer', color: 'bg-sky-50 border-sky-300 text-sky-700' },
+  montagne: { label: 'Montagne', description: 'Zone de montagne', color: 'bg-emerald-50 border-emerald-300 text-emerald-700' },
+  campagne: { label: 'Campagne', description: 'Zone rurale', color: 'bg-lime-50 border-lime-300 text-lime-700' },
 };
 
 export const RISK_LEVELS: Record<RiskLevel, { label: string; description: string; color: string }> = {
