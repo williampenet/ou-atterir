@@ -195,7 +195,7 @@ export const searchCommunes = async (
   if (filters.department) rpcParams.target_department = filters.department;
   if (filters.bloc) rpcParams.target_bloc = filters.bloc;
   if (filters.matchLevel) rpcParams.target_match_level = filters.matchLevel;
-  if (filters.equipmentDomains?.length) rpcParams.target_domains = filters.equipmentDomains;
+  if (filters.equipmentFilters?.length) rpcParams.target_equipment_filters = filters.equipmentFilters;
   if (filters.populationSizes?.length) rpcParams.target_pop_ranges = filters.populationSizes;
 
   const countParams: Record<string, unknown> = {
@@ -204,7 +204,7 @@ export const searchCommunes = async (
   if (filters.department) countParams.target_department = filters.department;
   if (filters.bloc) countParams.target_bloc = filters.bloc;
   if (filters.matchLevel) countParams.target_match_level = filters.matchLevel;
-  if (filters.equipmentDomains?.length) countParams.target_domains = filters.equipmentDomains;
+  if (filters.equipmentFilters?.length) countParams.target_equipment_filters = filters.equipmentFilters;
   if (filters.populationSizes?.length) countParams.target_pop_ranges = filters.populationSizes;
 
   const [resultsRes, countRes] = await Promise.all([

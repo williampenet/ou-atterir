@@ -3,7 +3,7 @@ import { Commune, EquipmentSummary, EquipmentDomain, RiskDetail, RiskLevel } fro
 import { getCommuneByInsee, getEquipmentSummary, getCommuneRisks } from '../services/communeService';
 import { EQUIPMENT_DOMAINS, RISK_LEVELS } from '../constants';
 import CommuneCard from './CommuneCard';
-import { X, Building2, ShoppingBag, GraduationCap, Heart, Train, Dumbbell, Palmtree, AlertTriangle } from 'lucide-react';
+import { X, ShoppingBag, GraduationCap, Heart, Train, Dumbbell, AlertTriangle } from 'lucide-react';
 
 interface Props {
   commune: Commune;
@@ -11,8 +11,8 @@ interface Props {
 }
 
 const DOMAIN_ICONS: Record<EquipmentDomain, React.FC<{ className?: string }>> = {
-  A: Building2, B: ShoppingBag, C: GraduationCap, D: Heart,
-  E: Train, F: Dumbbell, G: Palmtree,
+  B: ShoppingBag, C: GraduationCap, D: Heart,
+  E: Train, F: Dumbbell,
 };
 
 const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
