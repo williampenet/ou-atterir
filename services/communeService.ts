@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Commune, ElectionResult, StabilityLevel, IdealResult, PaginatedResults, SearchFilters, MatchLevel, EquipmentSummary, EquipmentDomain, RiskDetail } from '../types';
+import { Commune, ElectionResult, StabilityLevel, IdealResult, PaginatedResults, SearchFilters, MatchLevel, EquipmentSummary, EquipmentDomain, RiskDetail, DvfData, DvfYearStat, MarketTension } from '../types';
 
 // --------------------------------------------------
 // Row types (database shape)
@@ -198,6 +198,7 @@ export const searchCommunes = async (
   if (filters.equipmentFilters?.length) rpcParams.target_equipment_filters = filters.equipmentFilters;
   if (filters.populationSizes?.length) rpcParams.target_pop_ranges = filters.populationSizes;
   if (filters.geoTags?.length) rpcParams.target_geo_tags = filters.geoTags;
+  if (filters.prixM2Max) rpcParams.target_prix_m2_max = filters.prixM2Max;
 
   const countParams: Record<string, unknown> = {
     target_risk_level: filters.riskLevel ?? null,
@@ -208,6 +209,7 @@ export const searchCommunes = async (
   if (filters.equipmentFilters?.length) countParams.target_equipment_filters = filters.equipmentFilters;
   if (filters.populationSizes?.length) countParams.target_pop_ranges = filters.populationSizes;
   if (filters.geoTags?.length) countParams.target_geo_tags = filters.geoTags;
+  if (filters.prixM2Max) countParams.target_prix_m2_max = filters.prixM2Max;
 
   const [resultsRes, countRes] = await Promise.all([
     supabase.rpc('search_communes', rpcParams),
@@ -263,4 +265,32 @@ export const getCommuneRisks = async (insee: string): Promise<RiskDetail[]> => {
     numRisque: row.num_risque,
     libelleRisque: row.libelle_risque,
   }));
+};
+
+// --------------------------------------------------
+// API: DVF stats for a commune
+// --------------------------------------------------
+
+export const getDvfStats = async (insee: string): Promise<DvfData> => {
+  const [statsRes, tensionRes] = await Promise.all([
+    supabase.rpc('get_commune_dvf', { target_insee: insee }),
+    supabase.rpc('get_commune_tension', { target_insee: insee }),
+  ]);
+
+  const stats: DvfYearStat[] = (statsRes.data || []).map(
+    (row: { year: number; type_local: string; nb_mutations: number; prix_m2_median: number | null }) => ({
+      year: row.year,
+      typeLocal: row.type_local as 'maison' | 'appartement',
+      nbMutations: row.nb_mutations,
+      prixM2Median: row.prix_m2_median ? Number(row.prix_m2_median) : null,
+    })
+  );
+
+  const tensionRow = (tensionRes.data as { transactions_derniere_annee: number; tension_level: string }[] | null)?.[0];
+
+  return {
+    stats,
+    tension: (tensionRow?.tension_level as MarketTension) ?? null,
+    transactionsDerniereAnnee: tensionRow?.transactions_derniere_annee ?? 0,
+  };
 };

@@ -85,6 +85,21 @@ export interface RiskDetail {
   libelleRisque: string;
 }
 
+export type MarketTension = 'calme' | 'actif' | 'tendu';
+
+export interface DvfYearStat {
+  year: number;
+  typeLocal: 'maison' | 'appartement';
+  nbMutations: number;
+  prixM2Median: number | null;
+}
+
+export interface DvfData {
+  stats: DvfYearStat[];
+  tension: MarketTension | null;
+  transactionsDerniereAnnee: number;
+}
+
 export interface SearchFilters {
   department?: string;
   bloc?: PoliticalBloc;
@@ -93,6 +108,7 @@ export interface SearchFilters {
   populationSizes?: PopulationSize[];
   riskLevel?: RiskLevel;
   geoTags?: GeoTag[];
+  prixM2Max?: number;
 }
 
 export interface EquipmentSummary {

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { PoliticalBloc, SearchFilters, MatchLevel, EquipmentFilterKey, PopulationSize, RiskLevel, GeoTag } from '../types';
-import { BLOC_COLORS, EQUIPMENT_CATEGORIES, POPULATION_SIZES, RISK_LEVELS, GEO_TAGS } from '../constants';
+import { BLOC_COLORS, EQUIPMENT_CATEGORIES, POPULATION_SIZES, RISK_LEVELS, GEO_TAGS, PRIX_M2_RANGES } from '../constants';
 import { getDepartments } from '../services/communeService';
 import {
   X, SlidersHorizontal, Shield, TrendingUp,
   ShoppingBag, GraduationCap, Heart, Train, Dumbbell,
   Users, AlertTriangle, ChevronDown, Check,
-  Waves, Mountain, TreePine,
+  Waves, Mountain, TreePine, Euro,
 } from 'lucide-react';
 
 interface Props {
@@ -47,6 +47,7 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
   const selectedSizes = filters.populationSizes ?? [];
   const riskLevel = (filters.riskLevel as string) ?? '';
   const selectedGeoTags = filters.geoTags ?? [];
+  const prixM2Max = filters.prixM2Max;
 
   useEffect(() => {
     getDepartments().then(setDepartments);
@@ -100,7 +101,7 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
   };
 
   const activeCount =
-    [department, bloc, matchLevel, riskLevel].filter(Boolean).length +
+    [department, bloc, matchLevel, riskLevel, prixM2Max].filter(Boolean).length +
     selectedEquipment.length +
     selectedSizes.length +
     selectedGeoTags.length;
@@ -304,6 +305,23 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
                   {GEO_TAG_ICONS[key]}
                   {label}
                   <span className="text-[10px] font-normal opacity-70">{description}</span>
+                </ToggleButton>
+              ))}
+            </div>
+          </Section>
+
+          {/* Prix au m² */}
+          <Section label="Prix au m²">
+            <div className="flex flex-wrap gap-2">
+              {PRIX_M2_RANGES.map(({ key, label }) => (
+                <ToggleButton
+                  key={key}
+                  active={prixM2Max === key}
+                  onClick={() => update({ prixM2Max: prixM2Max === key ? undefined : key })}
+                  activeClass="bg-amber-50 border-amber-300 text-amber-700"
+                >
+                  <Euro className="w-3.5 h-3.5" />
+                  {label}
                 </ToggleButton>
               ))}
             </div>
