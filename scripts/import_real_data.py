@@ -34,6 +34,14 @@ PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
 DATA_DIR = os.path.join(PROJECT_DIR, "data")
 OUTPUT_PATH = os.path.join(PROJECT_DIR, "supabase", "seed_real_data.sql")
 
+# PLM cities: election data is aggregated at city level but votes are per-sector.
+# We split them into individual arrondissements using code_bv prefix.
+PLM_CITIES = {
+    "75056": {"name": "Paris", "dept_code": "75", "dept_name": "Paris", "arr_offset": 75100},
+    "69123": {"name": "Lyon", "dept_code": "69", "dept_name": "Rhône", "arr_offset": 69380},
+    "13055": {"name": "Marseille", "dept_code": "13", "dept_name": "Bouches-du-Rhône", "arr_offset": 13200},
+}
+
 # Nuance → Bloc mapping (same as baseline migration)
 NUANCE_BLOC = {
     "EXG": "Extrême-gauche", "LEXG": "Extrême-gauche", "DXG": "Extrême-gauche",
@@ -171,6 +179,85 @@ def main():
     """, [candidats_path]).fetchall()
     print(f"  → {len(winners)} winner records ({time.time()-t0:.1f}s)")
 
+    print("  Querying PLM arrondissement winners...")
+    t0 = time.time()
+    plm_winners = con.execute("""
+        WITH
+        mun_candidates AS (
+            SELECT
+                code_commune,
+                LEFT(code_bv, 2) AS arr,
+                CAST(LEFT(id_election, 4) AS INTEGER) AS year,
+                CASE WHEN id_election LIKE '%_t2' THEN 2 ELSE 1 END AS tour,
+                "Nuance" AS nuance,
+                COALESCE(NULLIF(nom_tete_liste, ''), nom || ' ' || prenom) AS candidate_name,
+                SUM(voix) AS total_voix
+            FROM read_parquet(?)
+            WHERE id_election LIKE '%muni%'
+              AND code_commune IN ('75056', '69123', '13055')
+            GROUP BY code_commune, arr, year, tour, nuance, candidate_name
+        ),
+        decisive_round AS (
+            SELECT code_commune, arr, year, MAX(tour) AS tour
+            FROM mun_candidates
+            GROUP BY code_commune, arr, year
+        ),
+        ranked AS (
+            SELECT
+                mc.code_commune, mc.arr, mc.year, mc.nuance, mc.candidate_name, mc.total_voix,
+                ROW_NUMBER() OVER (
+                    PARTITION BY mc.code_commune, mc.arr, mc.year
+                    ORDER BY mc.total_voix DESC
+                ) AS rk
+            FROM mun_candidates mc
+            JOIN decisive_round dr
+              ON mc.code_commune = dr.code_commune
+             AND mc.arr = dr.arr
+             AND mc.year = dr.year
+             AND mc.tour = dr.tour
+        )
+        SELECT code_commune, arr, year, nuance, candidate_name, total_voix
+        FROM ranked
+        WHERE rk = 1
+        ORDER BY code_commune, arr, year
+    """, [candidats_path]).fetchall()
+    print(f"  → {len(plm_winners)} PLM arrondissement winner records ({time.time()-t0:.1f}s)")
+
+    print("  Querying PLM arrondissement participation...")
+    t0 = time.time()
+    plm_participation = con.execute("""
+        WITH
+        mun_general AS (
+            SELECT
+                code_commune,
+                LEFT(code_bv, 2) AS arr,
+                CAST(LEFT(id_election, 4) AS INTEGER) AS year,
+                CASE WHEN id_election LIKE '%_t2' THEN 2 ELSE 1 END AS tour,
+                SUM(inscrits) AS inscrits,
+                SUM(votants) AS votants,
+                SUM(exprimes) AS exprimes
+            FROM read_parquet(?)
+            WHERE id_election LIKE '%muni%'
+              AND code_commune IN ('75056', '69123', '13055')
+            GROUP BY code_commune, arr, year, tour
+        ),
+        decisive AS (
+            SELECT code_commune, arr, year, MAX(tour) AS tour
+            FROM mun_general
+            GROUP BY code_commune, arr, year
+        )
+        SELECT
+            mg.code_commune, mg.arr, mg.year, mg.inscrits, mg.votants, mg.exprimes
+        FROM mun_general mg
+        JOIN decisive d
+          ON mg.code_commune = d.code_commune
+         AND mg.arr = d.arr
+         AND mg.year = d.year
+         AND mg.tour = d.tour
+        ORDER BY mg.code_commune, mg.arr, mg.year
+    """, [general_path]).fetchall()
+    print(f"  → {len(plm_participation)} PLM participation records ({time.time()-t0:.1f}s)")
+
     print("  Querying participation per commune...")
     t0 = time.time()
     participation = con.execute("""
@@ -219,7 +306,35 @@ def main():
     winners_map = {}  # insee → [{year, nuance, candidate, voix}]
     for row in winners:
         insee, year, nuance, candidate, voix = row
+        if insee in PLM_CITIES:
+            continue
         winners_map.setdefault(insee, []).append({
+            "year": year, "nuance": nuance or "DIV",
+            "candidate": candidate or "Inconnu", "voix": voix or 0,
+        })
+
+    # Build PLM arrondissement data
+    plm_part_map = {}
+    for row in plm_participation:
+        city_code, arr, year, inscrits, votants, exprimes = row
+        arr_insee = str(PLM_CITIES[city_code]["arr_offset"] + int(arr))
+        plm_part_map[(arr_insee, year)] = {
+            "inscrits": inscrits or 0, "votants": votants or 0, "exprimes": exprimes or 0,
+        }
+
+    part_map.update(plm_part_map)
+
+    for row in plm_winners:
+        city_code, arr, year, nuance, candidate, voix = row
+        cfg = PLM_CITIES[city_code]
+        arr_num = int(arr)
+        arr_insee = str(cfg["arr_offset"] + arr_num)
+        suffix = "er" if arr_num == 1 else "e"
+        arr_name = f"{cfg['name']} {arr_num}{suffix} Arrondissement"
+        commune_info[arr_insee] = {
+            "name": arr_name, "dept_code": cfg["dept_code"], "dept_name": cfg["dept_name"],
+        }
+        winners_map.setdefault(arr_insee, []).append({
             "year": year, "nuance": nuance or "DIV",
             "candidate": candidate or "Inconnu", "voix": voix or 0,
         })
@@ -251,7 +366,30 @@ def main():
             print(f"  Departments: {i+1}/{len(departments)}")
         time.sleep(0.05)
 
-    print(f"  → {len(geo_data)} communes geocoded")
+    # Fetch PLM arrondissements geo data
+    for city_code, cfg in PLM_CITIES.items():
+        try:
+            r = requests.get(
+                GEO_API_URL,
+                params={"codeParent": city_code, "type": "arrondissement-municipal",
+                        "fields": "nom,code,codesPostaux,centre,population"},
+                timeout=15,
+            )
+            if r.status_code == 200:
+                for a in r.json():
+                    cp = a.get("codesPostaux", [])
+                    centre = a.get("centre", {}).get("coordinates", [0, 0])
+                    geo_data[a["code"]] = {
+                        "zipcode": cp[0] if cp else "00000",
+                        "lat": centre[1] if len(centre) == 2 else 0,
+                        "lng": centre[0] if len(centre) == 2 else 0,
+                        "population": a.get("population"),
+                    }
+                print(f"  PLM: {cfg['name']} → {len(r.json())} arrondissements")
+        except Exception as e:
+            print(f"  Warning: PLM {cfg['name']} failed ({e})")
+
+    print(f"  → {len(geo_data)} communes geocoded (incl. PLM arrondissements)")
 
     # ---- Step 4: Build final dataset ----
     print("\n=== Step 4/5: Building dataset ===")
