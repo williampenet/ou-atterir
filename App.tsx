@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Info, SlidersHorizontal, X, Filter, BarChart3 } from 'lucide-react';
+import { Info, SlidersHorizontal, X, Filter, BarChart3, Scale } from 'lucide-react';
 import { searchCommunes } from './services/communeService';
 import { Commune, IdealResult, PaginatedResults, SearchFilters } from './types';
 import FilterSheet from './components/FilterSheet';
 import ResultsList from './components/ResultsList';
 import CommuneDrawer from './components/CommuneDrawer';
+import CompareView from './components/CompareView';
 
 const App: React.FC = () => {
   const [filters, setFilters] = useState<SearchFilters>({});
@@ -12,6 +13,8 @@ const App: React.FC = () => {
   const [selectedCommune, setSelectedCommune] = useState<Commune | null>(null);
   const [loading, setLoading] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [compareList, setCompareList] = useState<Commune[]>([]);
+  const [compareOpen, setCompareOpen] = useState(false);
   const [showNotice, setShowNotice] = useState(() => localStorage.getItem('ouatterir-notice-dismissed') !== 'true');
   const filtersRef = useRef(filters);
   const searchIdRef = useRef(0);
@@ -32,8 +35,18 @@ const App: React.FC = () => {
   const filtersKey = JSON.stringify(filters);
   useEffect(() => {
     filtersRef.current = filters;
+    setCompareList([]);
     doSearch(filters);
   }, [filtersKey]);
+
+  const toggleCompare = (commune: Commune) => {
+    setCompareList(prev => {
+      const exists = prev.some(c => c.insee === commune.insee);
+      if (exists) return prev.filter(c => c.insee !== commune.insee);
+      if (prev.length >= 2) return prev;
+      return [...prev, commune];
+    });
+  };
 
   const handlePageChange = (page: number) => {
     doSearch(filtersRef.current, page);
@@ -146,15 +159,26 @@ const App: React.FC = () => {
             selectedInsee={selectedCommune?.insee}
             onSelectCommune={setSelectedCommune}
             onPageChange={handlePageChange}
+            compareList={compareList}
+            onToggleCompare={toggleCompare}
           />
         ) : null}
       </main>
 
-      {/* Mobile floating filter button */}
-      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 sm:hidden">
+      {/* Floating buttons */}
+      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2">
+        {compareList.length === 2 && (
+          <button
+            onClick={() => setCompareOpen(true)}
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold bg-purple-600 text-white shadow-lg shadow-purple-600/30 hover:bg-purple-700 active:scale-95 transition-all"
+          >
+            <Scale className="w-4 h-4" />
+            Comparer
+          </button>
+        )}
         <button
           onClick={() => setFiltersOpen(true)}
-          className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition-all"
+          className="sm:hidden inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition-all"
         >
           <SlidersHorizontal className="w-4 h-4" />
           Filtres
@@ -180,6 +204,14 @@ const App: React.FC = () => {
         <CommuneDrawer
           commune={selectedCommune}
           onClose={() => setSelectedCommune(null)}
+        />
+      )}
+
+      {/* Compare view */}
+      {compareOpen && compareList.length === 2 && (
+        <CompareView
+          communes={compareList as [Commune, Commune]}
+          onClose={() => setCompareOpen(false)}
         />
       )}
 
