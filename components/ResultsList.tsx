@@ -106,7 +106,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, isSelected, onClick, in
             <MapPin className="w-3 h-3 mr-1" />
             {commune.zipcode} — {commune.department}
           </div>
-          <h3 className="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">{commune.name}</h3>
+          <h3 className="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">{commune.name} <span className="font-medium text-slate-400">({commune.zipcode})</span></h3>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 ${

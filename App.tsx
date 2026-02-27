@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Info, SlidersHorizontal, X, Filter, BarChart3, Scale } from 'lucide-react';
+import { Info, Search, X, Filter, BarChart3, Scale } from 'lucide-react';
 import { searchCommunes } from './services/communeService';
 import { Commune, IdealResult, PaginatedResults, SearchFilters } from './types';
 import FilterSheet from './components/FilterSheet';
@@ -92,28 +92,14 @@ const App: React.FC = () => {
               <span className="text-indigo-600 text-xs font-medium px-2 py-0.5 bg-indigo-50 rounded-full ml-1.5 align-middle">MVP</span>
             </h1>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setFiltersOpen(true)}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold border border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-700 transition-all bg-white"
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-              Filtres
-              {activeFilterCount > 0 && (
-                <span className="text-[10px] font-bold bg-indigo-600 text-white px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
-            <button onClick={toggleNotice} className={`transition-colors ${showNotice ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
-              <Info className="w-5 h-5" />
-            </button>
-          </div>
+          <button onClick={toggleNotice} className={`transition-colors ${showNotice ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
+            <Info className="w-5 h-5" />
+          </button>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow max-w-4xl mx-auto w-full px-4 py-6 space-y-4 pb-24 sm:pb-6">
+      <main className="flex-grow max-w-4xl mx-auto w-full px-4 py-6 space-y-4 pb-24">
 
         {showNotice && (
           <div className="relative bg-white rounded-2xl border border-indigo-100 shadow-sm overflow-hidden">
@@ -175,8 +161,8 @@ const App: React.FC = () => {
             <Scale className="w-4 h-4 text-purple-500 flex-shrink-0" />
             <div className="flex items-center gap-2 flex-1 min-w-0">
               {compareList.map(c => (
-                <span key={c.insee} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 border border-purple-200 rounded-xl text-xs font-semibold text-purple-700 max-w-[160px]">
-                  <span className="truncate">{c.name}</span>
+                <span key={c.insee} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 border border-purple-200 rounded-xl text-xs font-semibold text-purple-700 max-w-[200px]">
+                  <span className="truncate">{c.name} ({c.zipcode})</span>
                   <button
                     onClick={() => removeFromCompare(c.insee)}
                     className="p-0.5 rounded-full hover:bg-purple-200 text-purple-400 hover:text-purple-700 transition-colors flex-shrink-0"
@@ -201,14 +187,14 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Mobile floating filter button */}
-      <div className={`fixed left-1/2 -translate-x-1/2 z-40 sm:hidden ${compareList.length > 0 ? 'bottom-20' : 'bottom-5'}`}>
+      {/* Floating search/filter button */}
+      <div className={`fixed left-1/2 -translate-x-1/2 z-40 ${compareList.length > 0 ? 'bottom-20' : 'bottom-5'}`}>
         <button
           onClick={() => setFiltersOpen(true)}
           className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition-all"
         >
-          <SlidersHorizontal className="w-4 h-4" />
-          Filtres
+          <Search className="w-4 h-4" />
+          Rechercher
           {activeFilterCount > 0 && (
             <span className="text-[10px] font-bold bg-white text-indigo-600 px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
               {activeFilterCount}
@@ -224,6 +210,9 @@ const App: React.FC = () => {
         open={filtersOpen}
         onClose={() => setFiltersOpen(false)}
         resultCount={results?.total}
+        compareList={compareList}
+        onToggleCompare={toggleCompare}
+        onSelectCommune={setSelectedCommune}
       />
 
       {/* Detail drawer */}

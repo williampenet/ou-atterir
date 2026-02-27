@@ -233,6 +233,23 @@ export const searchCommunes = async (
 };
 
 // --------------------------------------------------
+// API: Text search (autocomplete by name or postal code)
+// --------------------------------------------------
+
+export const searchCommunesByText = async (query: string): Promise<IdealResult[]> => {
+  const trimmed = query.trim();
+  if (trimmed.length < 2) return [];
+
+  const { data, error } = await supabase.rpc('search_communes_by_text', {
+    search_text: trimmed,
+    result_limit: 10,
+  });
+
+  if (error || !data) return [];
+  return (data as RpcResultRow[]).map(rpcRowToResult);
+};
+
+// --------------------------------------------------
 // API: Equipment summary for a commune
 // --------------------------------------------------
 
