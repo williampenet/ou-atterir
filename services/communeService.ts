@@ -240,13 +240,54 @@ export const searchCommunesByText = async (query: string): Promise<IdealResult[]
   const trimmed = query.trim();
   if (trimmed.length < 2) return [];
 
-  const { data, error } = await supabase.rpc('search_communes_by_text', {
-    search_text: trimmed,
-    result_limit: 10,
-  });
+  const isPostal = /^\d/.test(trimmed);
+
+  let q = supabase
+    .from('communes')
+    .select('id, insee, zipcode, name, department, lat, lng, stability, current_mayor, population, election_results(year, winner_nuance, winner_name, score, turnout)')
+    .limit(10);
+
+  if (isPostal) {
+    q = q.like('zipcode', `${trimmed}%`);
+  } else {
+    q = q.ilike('name', `%${trimmed}%`);
+  }
+
+  const [{ data, error }, nuances] = await Promise.all([q, getNuancesMap()]);
 
   if (error || !data) return [];
-  return (data as RpcResultRow[]).map(rpcRowToResult);
+
+  return (data as CommuneRow[]).map((row) => {
+    const latest = row.election_results
+      ?.sort((a, b) => b.year - a.year)[0];
+    const nuance = latest ? nuances[latest.winner_nuance] : undefined;
+
+    return {
+      commune: {
+        insee: row.insee,
+        zipcode: row.zipcode,
+        name: row.name,
+        department: row.department,
+        coordinates: [row.lat, row.lng],
+        stability: mapStability(row.stability),
+        currentMayor: row.current_mayor,
+        population: row.population ?? undefined,
+        history: [],
+      },
+      matchLevel: 'tendance' as MatchLevel,
+      latestNuance: latest?.winner_nuance || '',
+      latestNuanceLabel: nuance?.label || latest?.winner_nuance || '',
+      latestBloc: nuance?.bloc || '',
+      latestWinner: latest?.winner_name || '',
+      latestYear: latest?.year || 0,
+      latestScore: latest?.score || 0,
+    };
+  }).sort((a, b) => {
+    const aExact = a.commune.name.toLowerCase() === trimmed.toLowerCase() ? 0 : 1;
+    const bExact = b.commune.name.toLowerCase() === trimmed.toLowerCase() ? 0 : 1;
+    if (aExact !== bExact) return aExact - bExact;
+    return a.commune.name.localeCompare(b.commune.name);
+  });
 };
 
 // --------------------------------------------------

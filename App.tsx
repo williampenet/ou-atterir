@@ -69,29 +69,25 @@ const App: React.FC = () => {
 
       {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="flex items-center justify-between py-3">
-            <div className="flex items-center space-x-2">
-              <div className="bg-indigo-600 p-2 rounded-lg">
-                <svg className="text-white w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 7V17L12 22L21 17V7L12 2L3 7Z" />
-                  <path d="M12 12L21 7" />
-                  <path d="M12 12L3 7" />
-                  <path d="M12 12V22" />
-                </svg>
-              </div>
-              <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-                Ou Atterir
-                <span className="text-indigo-600 text-xs font-medium px-2 py-0.5 bg-indigo-50 rounded-full ml-1.5 align-middle">MVP</span>
-              </h1>
+        <div className="max-w-4xl mx-auto px-4 flex items-center justify-between">
+          <div className="flex items-center space-x-2 py-3 flex-shrink-0">
+            <div className="bg-indigo-600 p-1.5 rounded-lg">
+              <svg className="text-white w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 7V17L12 22L21 17V7L12 2L3 7Z" />
+                <path d="M12 12L21 7" />
+                <path d="M12 12L3 7" />
+                <path d="M12 12V22" />
+              </svg>
             </div>
+            <h1 className="text-lg font-extrabold text-slate-900 tracking-tight">
+              Ou Atterir
+            </h1>
           </div>
 
-          {/* Navigation tabs */}
-          <div className="flex gap-1 -mb-px">
+          <nav className="flex gap-1 self-stretch -mb-px">
             <button
               onClick={() => setActivePage('accueil')}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold border-b-2 transition-colors ${
                 activePage === 'accueil'
                   ? 'text-indigo-700 border-indigo-600'
                   : 'text-slate-400 border-transparent hover:text-slate-600'
@@ -102,7 +98,7 @@ const App: React.FC = () => {
             </button>
             <button
               onClick={() => setActivePage('explorer')}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold border-b-2 transition-colors ${
                 activePage === 'explorer'
                   ? 'text-indigo-700 border-indigo-600'
                   : 'text-slate-400 border-transparent hover:text-slate-600'
@@ -116,7 +112,7 @@ const App: React.FC = () => {
                 </span>
               )}
             </button>
-          </div>
+          </nav>
         </div>
       </header>
 
