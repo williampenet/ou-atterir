@@ -245,7 +245,7 @@ export const searchCommunesByText = async (query: string): Promise<IdealResult[]
   let q = supabase
     .from('communes')
     .select('id, insee, zipcode, name, department, lat, lng, stability, current_mayor, population, election_results(year, winner_nuance, winner_name, score, turnout)')
-    .limit(10);
+    .limit(30);
 
   if (isPostal) {
     q = q.like('zipcode', `${trimmed}%`);
@@ -256,6 +256,16 @@ export const searchCommunesByText = async (query: string): Promise<IdealResult[]
   const [{ data, error }, nuances] = await Promise.all([q, getNuancesMap()]);
 
   if (error || !data) return [];
+
+  const lower = trimmed.toLowerCase();
+
+  function relevance(name: string): number {
+    const n = name.toLowerCase();
+    if (n === lower) return 0;
+    if (n.startsWith(lower + ' ') || n.startsWith(lower + '-')) return 1;
+    if (n.startsWith(lower)) return 2;
+    return 3;
+  }
 
   return (data as CommuneRow[]).map((row) => {
     const latest = row.election_results
@@ -283,9 +293,9 @@ export const searchCommunesByText = async (query: string): Promise<IdealResult[]
       latestScore: latest?.score || 0,
     };
   }).sort((a, b) => {
-    const aExact = a.commune.name.toLowerCase() === trimmed.toLowerCase() ? 0 : 1;
-    const bExact = b.commune.name.toLowerCase() === trimmed.toLowerCase() ? 0 : 1;
-    if (aExact !== bExact) return aExact - bExact;
+    const ra = relevance(a.commune.name);
+    const rb = relevance(b.commune.name);
+    if (ra !== rb) return ra - rb;
     return a.commune.name.localeCompare(b.commune.name);
   });
 };
