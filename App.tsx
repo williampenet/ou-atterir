@@ -35,9 +35,12 @@ const App: React.FC = () => {
   const filtersKey = JSON.stringify(filters);
   useEffect(() => {
     filtersRef.current = filters;
-    setCompareList([]);
     doSearch(filters);
   }, [filtersKey]);
+
+  const removeFromCompare = (insee: string) => {
+    setCompareList(prev => prev.filter(c => c.insee !== insee));
+  };
 
   const toggleCompare = (commune: Commune) => {
     setCompareList(prev => {
@@ -165,20 +168,44 @@ const App: React.FC = () => {
         ) : null}
       </main>
 
-      {/* Floating buttons */}
-      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2">
-        {compareList.length === 2 && (
-          <button
-            onClick={() => setCompareOpen(true)}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold bg-purple-600 text-white shadow-lg shadow-purple-600/30 hover:bg-purple-700 active:scale-95 transition-all"
-          >
-            <Scale className="w-4 h-4" />
-            Comparer
-          </button>
-        )}
+      {/* Compare tray */}
+      {compareList.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] sm:bottom-4 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto sm:w-auto sm:rounded-2xl sm:border sm:shadow-lg">
+          <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
+            <Scale className="w-4 h-4 text-purple-500 flex-shrink-0" />
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {compareList.map(c => (
+                <span key={c.insee} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 border border-purple-200 rounded-xl text-xs font-semibold text-purple-700 max-w-[160px]">
+                  <span className="truncate">{c.name}</span>
+                  <button
+                    onClick={() => removeFromCompare(c.insee)}
+                    className="p-0.5 rounded-full hover:bg-purple-200 text-purple-400 hover:text-purple-700 transition-colors flex-shrink-0"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+              {compareList.length === 1 && (
+                <span className="text-[11px] text-slate-400 italic">+ 1 commune</span>
+              )}
+            </div>
+            {compareList.length === 2 && (
+              <button
+                onClick={() => setCompareOpen(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-purple-600 text-white hover:bg-purple-700 active:scale-95 transition-all flex-shrink-0"
+              >
+                Comparer
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Mobile floating filter button */}
+      <div className={`fixed left-1/2 -translate-x-1/2 z-40 sm:hidden ${compareList.length > 0 ? 'bottom-20' : 'bottom-5'}`}>
         <button
           onClick={() => setFiltersOpen(true)}
-          className="sm:hidden inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition-all"
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition-all"
         >
           <SlidersHorizontal className="w-4 h-4" />
           Filtres
