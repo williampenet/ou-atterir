@@ -30,6 +30,7 @@ TEST_COMMUNES_BY_POSTAL = {
     "42520": "Saint-Pierre-de-Bœuf",
     "59000": "Lille",
     "62520": "Le Touquet-Paris-Plage",
+    "59110": "La Madeleine",
 }
 
 NUANCE_BLOC = {
