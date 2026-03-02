@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Info, SlidersHorizontal, X, Filter, BarChart3, Scale } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 import { searchCommunes } from './services/communeService';
 import { Commune, IdealResult, PaginatedResults, SearchFilters } from './types';
 import FilterSheet from './components/FilterSheet';
@@ -242,6 +243,7 @@ const App: React.FC = () => {
         />
       )}
 
+      <Analytics />
     </div>
   );
 };
