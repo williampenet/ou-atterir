@@ -83,10 +83,10 @@ export const MARKET_TENSION_LEVELS: Record<MarketTension, { label: string; color
 };
 
 export const AIR_QUALITY_LEVELS: Record<AirQuality, { label: string; description: string; color: string }> = {
-  bonne: { label: 'Bonne', description: 'Indice ≤ 2', color: 'bg-emerald-50 border-emerald-300 text-emerald-700' },
-  moyenne: { label: 'Moyenne', description: 'Indice 2-3', color: 'bg-sky-50 border-sky-300 text-sky-700' },
-  degradee: { label: 'Dégradée', description: 'Indice 3-4', color: 'bg-amber-50 border-amber-300 text-amber-700' },
-  mauvaise: { label: 'Mauvaise', description: 'Indice > 4', color: 'bg-red-50 border-red-300 text-red-700' },
+  bonne: { label: 'Bonne', description: 'PM2.5 < 5 µg/m³', color: 'bg-emerald-50 border-emerald-300 text-emerald-700' },
+  moyenne: { label: 'Moyenne', description: 'PM2.5 5–7 µg/m³', color: 'bg-sky-50 border-sky-300 text-sky-700' },
+  degradee: { label: 'Dégradée', description: 'PM2.5 7–9 µg/m³', color: 'bg-amber-50 border-amber-300 text-amber-700' },
+  mauvaise: { label: 'Mauvaise', description: 'PM2.5 > 9 µg/m³', color: 'bg-red-50 border-red-300 text-red-700' },
 };
 
 export const PRIX_M2_RANGES = [

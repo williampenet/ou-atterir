@@ -1,5 +1,6 @@
 -- ==========================================================
--- Ou Atterir — Air quality filter (Indice ATMO)
+-- Ou Atterir — Air quality filter (PM2.5 annual mean)
+-- Source: EEA interpolated PM2.5 data (1 km resolution)
 -- Adds commune_air_quality table, materialized view, and
 -- target_air_quality parameter to search/count functions
 -- ==========================================================
@@ -12,29 +13,31 @@ BEGIN;
 
 CREATE TABLE IF NOT EXISTS commune_air_quality (
   code_insee text PRIMARY KEY,
-  indice_moyen numeric NOT NULL,
-  nb_jours integer NOT NULL DEFAULT 0
+  pm25_concentration numeric NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_air_quality_indice ON commune_air_quality(indice_moyen);
+CREATE INDEX IF NOT EXISTS idx_air_quality_pm25 ON commune_air_quality(pm25_concentration);
 
 -- ==========================================================
 -- 1. Materialized view: air quality level per commune
+--    Thresholds based on WHO 2021 guidelines and French distribution:
+--    - bonne    : < 5 µg/m³  (WHO 2021 guideline)
+--    - moyenne   : 5–7 µg/m³  (around the national median)
+--    - degradee  : 7–9 µg/m³  (above average)
+--    - mauvaise  : ≥ 9 µg/m³  (well above average)
 -- ==========================================================
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS commune_air_summary AS
 SELECT
   code_insee,
-  indice_moyen,
-  nb_jours,
+  pm25_concentration,
   CASE
-    WHEN indice_moyen <= 2.0 THEN 'bonne'
-    WHEN indice_moyen <= 3.0 THEN 'moyenne'
-    WHEN indice_moyen <= 4.0 THEN 'degradee'
+    WHEN pm25_concentration < 5.0 THEN 'bonne'
+    WHEN pm25_concentration < 7.0 THEN 'moyenne'
+    WHEN pm25_concentration < 9.0 THEN 'degradee'
     ELSE 'mauvaise'
   END AS air_quality_level
-FROM commune_air_quality
-WHERE nb_jours >= 1;
+FROM commune_air_quality;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_air_summary_insee ON commune_air_summary(code_insee);
 CREATE INDEX IF NOT EXISTS idx_air_summary_level ON commune_air_summary(air_quality_level);
@@ -56,6 +59,7 @@ CREATE POLICY "Allow public insert on commune_air_quality"
 -- ==========================================================
 
 DROP FUNCTION IF EXISTS search_communes(text, text, text, text[], text[], text, text[], int, int, int);
+DROP FUNCTION IF EXISTS search_communes(text, text, text, text[], text[], text, text[], int, text, int, int);
 
 CREATE OR REPLACE FUNCTION search_communes(
   target_department text DEFAULT NULL,
@@ -246,6 +250,7 @@ $$ LANGUAGE plpgsql STABLE;
 -- ==========================================================
 
 DROP FUNCTION IF EXISTS count_communes(text, text, text, text[], text[], text, text[], int);
+DROP FUNCTION IF EXISTS count_communes(text, text, text, text[], text[], text, text[], int, text);
 
 CREATE OR REPLACE FUNCTION count_communes(
   target_department text DEFAULT NULL,
@@ -368,13 +373,12 @@ $$ LANGUAGE plpgsql STABLE;
 
 CREATE OR REPLACE FUNCTION get_commune_air_quality(target_insee text)
 RETURNS TABLE (
-  indice_moyen numeric,
-  nb_jours integer,
+  pm25_concentration numeric,
   air_quality_level text
 ) AS $$
 BEGIN
   RETURN QUERY
-  SELECT cas.indice_moyen, cas.nb_jours, cas.air_quality_level
+  SELECT cas.pm25_concentration, cas.air_quality_level
   FROM commune_air_summary cas
   WHERE cas.code_insee = target_insee;
 END;
