@@ -4,6 +4,7 @@ export const BLOC_COLORS: Record<string, string> = {
   [PoliticalBloc.EXTRÊME_GAUCHE]: '#b91c1c',
   [PoliticalBloc.GAUCHE]: '#ec4899',
   [PoliticalBloc.CENTRE]: '#f59e0b',
+  [PoliticalBloc.CENTRE_DROIT]: '#7c3aed',
   [PoliticalBloc.DROITE]: '#2563eb',
   [PoliticalBloc.EXTREME_DROITE]: '#1e1b4b',
   [PoliticalBloc.DIVERS]: '#94a3b8',

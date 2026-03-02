@@ -31,6 +31,7 @@ export enum PoliticalBloc {
   EXTRÊME_GAUCHE = 'Extrême-gauche',
   GAUCHE = 'Gauche',
   CENTRE = 'Centre',
+  CENTRE_DROIT = 'Centre-droit',
   DROITE = 'Droite',
   EXTREME_DROITE = 'Extrême-droite',
   DIVERS = 'Divers',

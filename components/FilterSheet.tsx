@@ -21,6 +21,7 @@ const BLOC_OPTIONS = [
   { value: PoliticalBloc.EXTRÊME_GAUCHE, label: 'Extrême-gauche' },
   { value: PoliticalBloc.GAUCHE, label: 'Gauche' },
   { value: PoliticalBloc.CENTRE, label: 'Centre' },
+  { value: PoliticalBloc.CENTRE_DROIT, label: 'Centre-droit' },
   { value: PoliticalBloc.DROITE, label: 'Droite' },
   { value: PoliticalBloc.EXTREME_DROITE, label: 'Extrême-droite' },
   { value: PoliticalBloc.DIVERS, label: 'Divers' },
