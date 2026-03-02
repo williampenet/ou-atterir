@@ -199,6 +199,7 @@ export const searchCommunes = async (
   if (filters.populationSizes?.length) rpcParams.target_pop_ranges = filters.populationSizes;
   if (filters.geoTags?.length) rpcParams.target_geo_tags = filters.geoTags;
   if (filters.prixM2Max) rpcParams.target_prix_m2_max = filters.prixM2Max;
+  if (filters.airQuality) rpcParams.target_air_quality = filters.airQuality;
 
   const countParams: Record<string, unknown> = {
     target_risk_level: filters.riskLevel ?? null,
@@ -210,6 +211,7 @@ export const searchCommunes = async (
   if (filters.populationSizes?.length) countParams.target_pop_ranges = filters.populationSizes;
   if (filters.geoTags?.length) countParams.target_geo_tags = filters.geoTags;
   if (filters.prixM2Max) countParams.target_prix_m2_max = filters.prixM2Max;
+  if (filters.airQuality) countParams.target_air_quality = filters.airQuality;
 
   const [resultsRes, countRes] = await Promise.all([
     supabase.rpc('search_communes', rpcParams),

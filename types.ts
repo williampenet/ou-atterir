@@ -79,6 +79,8 @@ export type PopulationSize = 'hameau' | 'village' | 'bourg' | 'petite_ville' | '
 
 export type RiskLevel = 'peu_expose' | 'modere' | 'tres_expose';
 
+export type AirQuality = 'bonne' | 'moyenne' | 'degradee' | 'mauvaise';
+
 export type GeoTag = 'littoral' | 'montagne' | 'campagne';
 
 export interface RiskDetail {
@@ -110,6 +112,7 @@ export interface SearchFilters {
   riskLevel?: RiskLevel;
   geoTags?: GeoTag[];
   prixM2Max?: number;
+  airQuality?: AirQuality;
 }
 
 export interface EquipmentSummary {

@@ -1,4 +1,4 @@
-import { PoliticalBloc, StabilityLevel, EquipmentDomain, EquipmentCategory, PopulationSize, RiskLevel, GeoTag, MarketTension } from './types';
+import { PoliticalBloc, StabilityLevel, EquipmentDomain, EquipmentCategory, PopulationSize, RiskLevel, GeoTag, MarketTension, AirQuality } from './types';
 
 export const BLOC_COLORS: Record<string, string> = {
   [PoliticalBloc.EXTRÊME_GAUCHE]: '#b91c1c',
@@ -80,6 +80,13 @@ export const MARKET_TENSION_LEVELS: Record<MarketTension, { label: string; color
   calme: { label: 'Calme', color: 'bg-emerald-50 border-emerald-300 text-emerald-700' },
   actif: { label: 'Actif', color: 'bg-amber-50 border-amber-300 text-amber-700' },
   tendu: { label: 'Tendu', color: 'bg-red-50 border-red-300 text-red-700' },
+};
+
+export const AIR_QUALITY_LEVELS: Record<AirQuality, { label: string; description: string; color: string }> = {
+  bonne: { label: 'Bonne', description: 'Indice ≤ 2', color: 'bg-emerald-50 border-emerald-300 text-emerald-700' },
+  moyenne: { label: 'Moyenne', description: 'Indice 2-3', color: 'bg-sky-50 border-sky-300 text-sky-700' },
+  degradee: { label: 'Dégradée', description: 'Indice 3-4', color: 'bg-amber-50 border-amber-300 text-amber-700' },
+  mauvaise: { label: 'Mauvaise', description: 'Indice > 4', color: 'bg-red-50 border-red-300 text-red-700' },
 };
 
 export const PRIX_M2_RANGES = [
