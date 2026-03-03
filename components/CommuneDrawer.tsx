@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Commune, EquipmentSummary, EquipmentDomain, RiskDetail, RiskLevel, DvfData } from '../types';
-import { getCommuneByInsee, getEquipmentSummary, getCommuneRisks, getDvfStats } from '../services/communeService';
-import { EQUIPMENT_DOMAINS, RISK_LEVELS } from '../constants';
+import { Commune, EquipmentSummary, EquipmentDomain, RiskDetail, RiskLevel, DvfData, AirQuality } from '../types';
+import { getCommuneByInsee, getEquipmentSummary, getCommuneRisks, getDvfStats, getCommuneAirQuality, AirQualityData } from '../services/communeService';
+import { EQUIPMENT_DOMAINS, RISK_LEVELS, AIR_QUALITY_LEVELS } from '../constants';
 import CommuneCard from './CommuneCard';
 import DvfChart from './DvfChart';
-import { X, ShoppingBag, GraduationCap, Heart, Train, Dumbbell, AlertTriangle } from 'lucide-react';
+import { X, ShoppingBag, GraduationCap, Heart, Train, Dumbbell, AlertTriangle, Wind } from 'lucide-react';
 
 interface Props {
   commune: Commune;
@@ -22,6 +22,7 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
   const [equipments, setEquipments] = useState<EquipmentSummary[]>([]);
   const [risks, setRisks] = useState<RiskDetail[]>([]);
   const [dvfData, setDvfData] = useState<DvfData | null>(null);
+  const [airQuality, setAirQuality] = useState<AirQualityData | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -29,16 +30,19 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
     setEquipments([]);
     setRisks([]);
     setDvfData(null);
+    setAirQuality(null);
     Promise.all([
       getCommuneByInsee(commune.insee),
       getEquipmentSummary(commune.insee),
       getCommuneRisks(commune.insee),
       getDvfStats(commune.insee),
-    ]).then(([data, eqs, rks, dvf]) => {
+      getCommuneAirQuality(commune.insee),
+    ]).then(([data, eqs, rks, dvf, aq]) => {
       setFullCommune(data ?? commune);
       setEquipments(eqs);
       setRisks(rks);
       setDvfData(dvf);
+      setAirQuality(aq);
       setLoading(false);
     });
   }, [commune.insee]);
@@ -120,6 +124,29 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
               )}
             </div>
           )}
+
+          {/* Air quality */}
+          {!loading && airQuality && (() => {
+            const level = airQuality.airQualityLevel as AirQuality;
+            const config = AIR_QUALITY_LEVELS[level];
+            if (!config) return null;
+            return (
+              <div className="mt-5 bg-slate-50 rounded-xl p-4 border border-slate-200">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Qualité de l'air</h4>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${config.color}`}>
+                    <Wind className="w-2.5 h-2.5" />
+                    {config.label}
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-extrabold text-slate-800">{airQuality.pm25Concentration.toFixed(1)}</span>
+                  <span className="text-xs text-slate-400">µg/m³ PM2.5 (moyenne annuelle)</span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-2">Source : Agence européenne pour l'environnement (2024)</p>
+              </div>
+            );
+          })()}
 
           {/* DVF market data */}
           {!loading && dvfData && <DvfChart dvfData={dvfData} />}
