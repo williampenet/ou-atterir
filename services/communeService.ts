@@ -284,7 +284,7 @@ export const searchCommunesByText = async (query: string): Promise<IdealResult[]
         zipcode: row.zipcode,
         name: row.name,
         department: row.department,
-        coordinates: [row.lat, row.lng],
+        coordinates: [row.lat, row.lng] as [number, number],
         stability: mapStability(row.stability),
         currentMayor: row.current_mayor,
         population: row.population ?? undefined,
