@@ -341,6 +341,25 @@ export const getCommuneRisks = async (insee: string): Promise<RiskDetail[]> => {
 // API: DVF stats for a commune
 // --------------------------------------------------
 
+export interface AirQualityData {
+  pm25Concentration: number;
+  airQualityLevel: string;
+}
+
+export const getCommuneAirQuality = async (insee: string): Promise<AirQualityData | null> => {
+  const { data, error } = await supabase.rpc('get_commune_air_quality', {
+    target_insee: insee,
+  });
+
+  if (error || !data || (data as unknown[]).length === 0) return null;
+
+  const row = (data as { pm25_concentration: number; air_quality_level: string }[])[0];
+  return {
+    pm25Concentration: Number(row.pm25_concentration),
+    airQualityLevel: row.air_quality_level,
+  };
+};
+
 export const getDvfStats = async (insee: string): Promise<DvfData> => {
   const [statsRes, tensionRes] = await Promise.all([
     supabase.rpc('get_commune_dvf', { target_insee: insee }),
