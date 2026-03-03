@@ -1,7 +1,7 @@
 import React from 'react';
 import { StabilityLevel } from '../types';
 import { STABILITY_COLORS } from '../constants';
-import { Shield, Activity, Anchor, AlertTriangle } from 'lucide-react';
+import { Shield, Activity } from 'lucide-react';
 
 interface Props {
   level: StabilityLevel;
@@ -12,10 +12,8 @@ const StabilityBadge: React.FC<Props> = ({ level }) => {
 
   const getIcon = () => {
     switch (level) {
-      case StabilityLevel.FORTRESS: return <Shield className="w-4 h-4 mr-1.5" />;
-      case StabilityLevel.STABLE: return <Anchor className="w-4 h-4 mr-1.5" />;
-      case StabilityLevel.SWING: return <Activity className="w-4 h-4 mr-1.5" />;
-      case StabilityLevel.UNSTABLE: return <AlertTriangle className="w-4 h-4 mr-1.5" />;
+      case StabilityLevel.FORTERESSE: return <Shield className="w-4 h-4 mr-1.5" />;
+      case StabilityLevel.EN_BALLOTTAGE: return <Activity className="w-4 h-4 mr-1.5" />;
     }
   };
 

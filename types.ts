@@ -1,12 +1,13 @@
 export enum StabilityLevel {
-  FORTRESS = 'Forteresse',
-  STABLE = 'Stable',
-  SWING = 'En bascule',
-  UNSTABLE = 'Instable'
+  FORTERESSE = 'Forteresse',
+  EN_BALLOTTAGE = 'En ballottage',
 }
+
+export type ElectionType = 'municipales' | 'presidentielles' | 'legislatives' | 'europeennes';
 
 export interface ElectionResult {
   year: number;
+  electionType: ElectionType;
   winnerNuance: string;
   winnerNuanceLabel: string;
   winnerBloc: string;

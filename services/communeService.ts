@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Commune, ElectionResult, StabilityLevel, IdealResult, PaginatedResults, SearchFilters, MatchLevel, EquipmentSummary, EquipmentDomain, RiskDetail, DvfData, DvfYearStat, MarketTension } from '../types';
+import { Commune, ElectionResult, ElectionType, StabilityLevel, IdealResult, PaginatedResults, SearchFilters, MatchLevel, EquipmentSummary, EquipmentDomain, RiskDetail, DvfData, DvfYearStat, MarketTension } from '../types';
 
 // --------------------------------------------------
 // Row types (database shape)
@@ -21,6 +21,7 @@ interface CommuneRow {
 
 interface ElectionRow {
   year: number;
+  election_type: ElectionType;
   winner_nuance: string;
   winner_name: string;
   score: number;
@@ -72,12 +73,14 @@ async function getNuancesMap(): Promise<Record<string, NuanceInfo>> {
 
 function mapStability(value: string): StabilityLevel {
   const map: Record<string, StabilityLevel> = {
-    'FORTRESS': StabilityLevel.FORTRESS,
-    'STABLE': StabilityLevel.STABLE,
-    'SWING': StabilityLevel.SWING,
-    'UNSTABLE': StabilityLevel.UNSTABLE,
+    'FORTERESSE': StabilityLevel.FORTERESSE,
+    'EN BALLOTTAGE': StabilityLevel.EN_BALLOTTAGE,
+    'FORTRESS': StabilityLevel.FORTERESSE,
+    'STABLE': StabilityLevel.FORTERESSE,
+    'SWING': StabilityLevel.EN_BALLOTTAGE,
+    'UNSTABLE': StabilityLevel.EN_BALLOTTAGE,
   };
-  return map[value] ?? StabilityLevel.UNSTABLE;
+  return map[value] ?? StabilityLevel.EN_BALLOTTAGE;
 }
 
 function toCommune(row: CommuneRow, nuances: Record<string, NuanceInfo>): Commune {
@@ -94,6 +97,7 @@ function toCommune(row: CommuneRow, nuances: Record<string, NuanceInfo>): Commun
       const n = nuances[e.winner_nuance];
       return {
         year: e.year,
+        electionType: e.election_type || 'municipales',
         winnerNuance: e.winner_nuance,
         winnerNuanceLabel: n?.label || e.winner_nuance,
         winnerBloc: n?.bloc || '',
