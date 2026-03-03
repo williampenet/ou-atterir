@@ -98,7 +98,7 @@ const CompareView: React.FC<Props> = ({ communes, onClose }) => {
                   : 'text-slate-400 hover:text-slate-600'
               }`}
             >
-              {c.name}
+              {c.name} ({c.zipcode})
             </button>
           ))}
         </div>
@@ -349,8 +349,8 @@ const EquipmentsSection: React.FC<{ a: CommuneFullData; b: CommuneFullData; acti
         );
       })}
       <div className="flex items-center justify-between pt-1">
-        <span className="text-[10px] text-indigo-500 font-semibold">{a.commune.name}</span>
-        <span className="text-[10px] text-purple-500 font-semibold">{b.commune.name}</span>
+        <span className="text-[10px] text-indigo-500 font-semibold">{a.commune.name} ({a.commune.zipcode})</span>
+        <span className="text-[10px] text-purple-500 font-semibold">{b.commune.name} ({b.commune.zipcode})</span>
       </div>
     </div>
   );

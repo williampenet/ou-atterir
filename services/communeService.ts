@@ -199,6 +199,7 @@ export const searchCommunes = async (
   if (filters.populationSizes?.length) rpcParams.target_pop_ranges = filters.populationSizes;
   if (filters.geoTags?.length) rpcParams.target_geo_tags = filters.geoTags;
   if (filters.prixM2Max) rpcParams.target_prix_m2_max = filters.prixM2Max;
+  if (filters.airQuality) rpcParams.target_air_quality = filters.airQuality;
 
   const countParams: Record<string, unknown> = {
     target_risk_level: filters.riskLevel ?? null,
@@ -210,6 +211,7 @@ export const searchCommunes = async (
   if (filters.populationSizes?.length) countParams.target_pop_ranges = filters.populationSizes;
   if (filters.geoTags?.length) countParams.target_geo_tags = filters.geoTags;
   if (filters.prixM2Max) countParams.target_prix_m2_max = filters.prixM2Max;
+  if (filters.airQuality) countParams.target_air_quality = filters.airQuality;
 
   const [resultsRes, countRes] = await Promise.all([
     supabase.rpc('search_communes', rpcParams),
@@ -230,6 +232,74 @@ export const searchCommunes = async (
     pageSize,
     hasMore: offset + rows.length < total,
   };
+};
+
+// --------------------------------------------------
+// API: Text search (autocomplete by name or postal code)
+// --------------------------------------------------
+
+export const searchCommunesByText = async (query: string): Promise<IdealResult[]> => {
+  const trimmed = query.trim();
+  if (trimmed.length < 2) return [];
+
+  const isPostal = /^\d/.test(trimmed);
+
+  let q = supabase
+    .from('communes')
+    .select('id, insee, zipcode, name, department, lat, lng, stability, current_mayor, population, election_results(year, winner_nuance, winner_name, score, turnout)')
+    .limit(30);
+
+  if (isPostal) {
+    q = q.like('zipcode', `${trimmed}%`);
+  } else {
+    q = q.ilike('name', `%${trimmed}%`);
+  }
+
+  const [{ data, error }, nuances] = await Promise.all([q, getNuancesMap()]);
+
+  if (error || !data) return [];
+
+  const lower = trimmed.toLowerCase();
+
+  function relevance(name: string): number {
+    const n = name.toLowerCase();
+    if (n === lower) return 0;
+    if (n.startsWith(lower + ' ') || n.startsWith(lower + '-')) return 1;
+    if (n.startsWith(lower)) return 2;
+    return 3;
+  }
+
+  return (data as CommuneRow[]).map((row) => {
+    const latest = row.election_results
+      ?.sort((a, b) => b.year - a.year)[0];
+    const nuance = latest ? nuances[latest.winner_nuance] : undefined;
+
+    return {
+      commune: {
+        insee: row.insee,
+        zipcode: row.zipcode,
+        name: row.name,
+        department: row.department,
+        coordinates: [row.lat, row.lng],
+        stability: mapStability(row.stability),
+        currentMayor: row.current_mayor,
+        population: row.population ?? undefined,
+        history: [],
+      },
+      matchLevel: 'tendance' as MatchLevel,
+      latestNuance: latest?.winner_nuance || '',
+      latestNuanceLabel: nuance?.label || latest?.winner_nuance || '',
+      latestBloc: nuance?.bloc || '',
+      latestWinner: latest?.winner_name || '',
+      latestYear: latest?.year || 0,
+      latestScore: latest?.score || 0,
+    };
+  }).sort((a, b) => {
+    const ra = relevance(a.commune.name);
+    const rb = relevance(b.commune.name);
+    if (ra !== rb) return ra - rb;
+    return a.commune.name.localeCompare(b.commune.name);
+  });
 };
 
 // --------------------------------------------------

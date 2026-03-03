@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { PoliticalBloc, SearchFilters, MatchLevel, EquipmentFilterKey, PopulationSize, RiskLevel, GeoTag } from '../types';
-import { BLOC_COLORS, EQUIPMENT_CATEGORIES, POPULATION_SIZES, RISK_LEVELS, GEO_TAGS, PRIX_M2_RANGES } from '../constants';
+import { PoliticalBloc, SearchFilters, MatchLevel, EquipmentFilterKey, PopulationSize, RiskLevel, GeoTag, AirQuality } from '../types';
+import { BLOC_COLORS, EQUIPMENT_CATEGORIES, POPULATION_SIZES, RISK_LEVELS, GEO_TAGS, PRIX_M2_RANGES, AIR_QUALITY_LEVELS } from '../constants';
 import { getDepartments } from '../services/communeService';
 import {
   X, SlidersHorizontal, Shield, TrendingUp,
   ShoppingBag, GraduationCap, Heart, Train, Dumbbell,
   Users, AlertTriangle, ChevronDown, Check,
-  Waves, Mountain, TreePine, Euro,
+  Waves, Mountain, TreePine, Euro, Wind,
 } from 'lucide-react';
 
 interface Props {
@@ -21,6 +21,7 @@ const BLOC_OPTIONS = [
   { value: PoliticalBloc.EXTRÊME_GAUCHE, label: 'Extrême-gauche' },
   { value: PoliticalBloc.GAUCHE, label: 'Gauche' },
   { value: PoliticalBloc.CENTRE, label: 'Centre' },
+  { value: PoliticalBloc.CENTRE_DROIT, label: 'Centre-droit' },
   { value: PoliticalBloc.DROITE, label: 'Droite' },
   { value: PoliticalBloc.EXTREME_DROITE, label: 'Extrême-droite' },
   { value: PoliticalBloc.DIVERS, label: 'Divers' },
@@ -48,6 +49,7 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
   const riskLevel = (filters.riskLevel as string) ?? '';
   const selectedGeoTags = filters.geoTags ?? [];
   const prixM2Max = filters.prixM2Max;
+  const airQuality = (filters.airQuality as string) ?? '';
 
   useEffect(() => {
     getDepartments().then(setDepartments);
@@ -101,7 +103,7 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
   };
 
   const activeCount =
-    [department, bloc, matchLevel, riskLevel, prixM2Max].filter(Boolean).length +
+    [department, bloc, matchLevel, riskLevel, prixM2Max, airQuality].filter(Boolean).length +
     selectedEquipment.length +
     selectedSizes.length +
     selectedGeoTags.length;
@@ -285,6 +287,24 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
                   activeClass={color}
                 >
                   <AlertTriangle className="w-3.5 h-3.5" />
+                  {label}
+                  <span className="text-[10px] font-normal opacity-70">{description}</span>
+                </ToggleButton>
+              ))}
+            </div>
+          </Section>
+
+          {/* Air quality */}
+          <Section label="Qualité de l'air">
+            <div className="flex flex-wrap gap-2">
+              {(Object.entries(AIR_QUALITY_LEVELS) as [AirQuality, { label: string; description: string; color: string }][]).map(([key, { label, description, color }]) => (
+                <ToggleButton
+                  key={key}
+                  active={airQuality === key}
+                  onClick={() => update({ airQuality: airQuality === key ? undefined : key as AirQuality })}
+                  activeClass={color}
+                >
+                  <Wind className="w-3.5 h-3.5" />
                   {label}
                   <span className="text-[10px] font-normal opacity-70">{description}</span>
                 </ToggleButton>
