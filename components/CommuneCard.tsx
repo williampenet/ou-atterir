@@ -1,5 +1,5 @@
 import React from 'react';
-import { Commune } from '../types';
+import { Commune, ElectionType } from '../types';
 import { BLOC_COLORS } from '../constants';
 import StabilityBadge from './StabilityBadge';
 import { MapPin, Users } from 'lucide-react';
@@ -9,11 +9,32 @@ interface Props {
   loading?: boolean;
 }
 
+const ELECTION_TYPE_LABELS: Record<ElectionType, string> = {
+  municipales: 'Municipales',
+  presidentielles: 'Présidentielles',
+  legislatives: 'Législatives',
+  europeennes: 'Européennes',
+};
+
+const ELECTION_TYPE_ORDER: ElectionType[] = ['municipales', 'presidentielles', 'legislatives', 'europeennes'];
+
 const CommuneCard: React.FC<Props> = ({ commune, loading }) => {
-  const sorted = [...commune.history].sort((a, b) => b.year - a.year);
-  const recent = sorted.length > 0 ? sorted[0] : null;
+  const muniHistory = commune.history.filter(e => e.electionType === 'municipales');
+  const recentMuni = muniHistory.length > 0
+    ? muniHistory.sort((a, b) => b.year - a.year)[0]
+    : null;
 
   const getBlocColor = (bloc: string) => BLOC_COLORS[bloc] || '#94a3b8';
+
+  const groupedByType = ELECTION_TYPE_ORDER
+    .map(type => ({
+      type,
+      label: ELECTION_TYPE_LABELS[type],
+      elections: commune.history
+        .filter(e => e.electionType === type)
+        .sort((a, b) => b.year - a.year),
+    }))
+    .filter(g => g.elections.length > 0);
 
   return (
     <div className="flex flex-col w-full">
@@ -38,48 +59,54 @@ const CommuneCard: React.FC<Props> = ({ commune, loading }) => {
           <StabilityBadge level={commune.stability} />
         </div>
 
-        {recent && (
+        {recentMuni && (
           <div className="flex items-center mt-3">
             <div className="flex -space-x-2 mr-3">
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold border-2 border-white ring-1 ring-slate-100"
-                style={{ backgroundColor: getBlocColor(recent.winnerBloc) }}
+                style={{ backgroundColor: getBlocColor(recentMuni.winnerBloc) }}
               >
-                {recent.winnerNuance.substring(0, 2)}
+                {recentMuni.winnerNuance.substring(0, 2)}
               </div>
             </div>
             <div>
               <p className="text-xs text-slate-500 uppercase font-bold tracking-wide">Maire actuel</p>
               <p className="text-sm font-semibold text-slate-800">
-                {commune.currentMayor} <span className="text-slate-400 font-normal">({recent.winnerNuanceLabel})</span>
+                {commune.currentMayor} <span className="text-slate-400 font-normal">({recentMuni.winnerNuanceLabel})</span>
               </p>
             </div>
           </div>
         )}
       </div>
 
-      {/* History */}
+      {/* History grouped by election type */}
       <div className="pt-5">
         {loading ? (
           <div className="flex flex-col items-center py-8">
             <div className="w-6 h-6 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
             <p className="text-slate-400 text-xs">Chargement de l'historique...</p>
           </div>
-        ) : sorted.length > 0 ? (
-          <div className="space-y-3">
-            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Historique electoral</h4>
-            {sorted.map((election) => (
-              <div key={election.year} className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100">
-                <div className="flex items-center">
-                  <span className="text-sm font-bold text-slate-700 w-12">{election.year}</span>
-                  <div className="h-3 w-3 rounded-full mr-3 flex-shrink-0" style={{ backgroundColor: getBlocColor(election.winnerBloc) }} />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium text-slate-800">{election.winnerName} <span className="text-slate-400 font-normal">({election.winnerNuanceLabel})</span></span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="block text-sm font-bold text-slate-900">{election.score}%</span>
-                  <span className="block text-[10px] text-slate-400">Part. {election.turnout}%</span>
+        ) : groupedByType.length > 0 ? (
+          <div className="space-y-5">
+            {groupedByType.map(({ type, label, elections }) => (
+              <div key={type}>
+                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{label}</h4>
+                <div className="space-y-2">
+                  {elections.map((election) => (
+                    <div key={`${type}-${election.year}`} className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100">
+                      <div className="flex items-center">
+                        <span className="text-sm font-bold text-slate-700 w-12">{election.year}</span>
+                        <div className="h-3 w-3 rounded-full mr-3 flex-shrink-0" style={{ backgroundColor: getBlocColor(election.winnerBloc) }} />
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-slate-800">{election.winnerName} <span className="text-slate-400 font-normal">({election.winnerNuanceLabel})</span></span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="block text-sm font-bold text-slate-900">{election.score}%</span>
+                        <span className="block text-[10px] text-slate-400">Part. {election.turnout}%</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
