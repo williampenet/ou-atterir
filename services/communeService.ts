@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Commune, ElectionResult, ElectionType, StabilityLevel, IdealResult, PaginatedResults, SearchFilters, MatchLevel, EquipmentSummary, EquipmentDomain, RiskDetail, DvfData, DvfYearStat, MarketTension } from '../types';
+import { Commune, ElectionResult, ElectionType, StabilityLevel, IdealResult, PaginatedResults, SearchFilters, MatchLevel, EquipmentSummary, EquipmentDomain, RiskDetail, DvfData, DvfYearStat, MarketTension, MapMarker, MapBounds } from '../types';
 
 // --------------------------------------------------
 // Row types (database shape)
@@ -362,6 +362,49 @@ export const getCommuneAirQuality = async (insee: string): Promise<AirQualityDat
     pm25Concentration: Number(row.pm25_concentration),
     airQualityLevel: row.air_quality_level,
   };
+};
+
+// --------------------------------------------------
+// API: Lightweight map markers (bbox-filtered)
+// --------------------------------------------------
+
+export const searchCommunesForMap = async (
+  filters: SearchFilters,
+  bounds: MapBounds | null,
+  limit = 300
+): Promise<MapMarker[]> => {
+  const rpcParams: Record<string, unknown> = {
+    result_limit: limit,
+    target_risk_level: filters.riskLevel ?? null,
+  };
+
+  if (filters.department) rpcParams.target_department = filters.department;
+  if (filters.bloc) rpcParams.target_bloc = filters.bloc;
+  if (filters.matchLevel) rpcParams.target_match_level = filters.matchLevel;
+  if (filters.equipmentFilters?.length) rpcParams.target_equipment_filters = filters.equipmentFilters;
+  if (filters.populationSizes?.length) rpcParams.target_pop_ranges = filters.populationSizes;
+  if (filters.geoTags?.length) rpcParams.target_geo_tags = filters.geoTags;
+  if (filters.prixM2Max) rpcParams.target_prix_m2_max = filters.prixM2Max;
+  if (filters.airQuality) rpcParams.target_air_quality = filters.airQuality;
+  if (bounds) {
+    rpcParams.lat_min = bounds.latMin;
+    rpcParams.lat_max = bounds.latMax;
+    rpcParams.lng_min = bounds.lngMin;
+    rpcParams.lng_max = bounds.lngMax;
+  }
+
+  const { data, error } = await supabase.rpc('search_communes_map', rpcParams);
+  if (error || !data) return [];
+
+  return (data as { insee: string; name: string; zipcode: string; lat: number; lng: number; latest_bloc: string | null; match_level: string }[]).map(row => ({
+    insee: row.insee,
+    name: row.name,
+    zipcode: row.zipcode,
+    lat: row.lat,
+    lng: row.lng,
+    latestBloc: row.latest_bloc,
+    matchLevel: row.match_level as MatchLevel | 'all',
+  }));
 };
 
 export const getDvfStats = async (insee: string): Promise<DvfData> => {

@@ -1,17 +1,29 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, SlidersHorizontal, X, Scale, MapPin, Loader2 } from 'lucide-react';
-import { searchCommunes, searchCommunesByText } from './services/communeService';
+import { Search, SlidersHorizontal, X, Scale, MapPin, Loader2, Map, List } from 'lucide-react';
+import { searchCommunes, searchCommunesByText, getCommuneByInsee } from './services/communeService';
 import { Commune, IdealResult, PaginatedResults, SearchFilters } from './types';
 import { BLOC_COLORS } from './constants';
 import FilterSheet from './components/FilterSheet';
+import FilterBar from './components/FilterBar';
 import ResultsList from './components/ResultsList';
 import CommuneDrawer from './components/CommuneDrawer';
 import CompareView from './components/CompareView';
+import MapComponent from './components/MapComponent';
 
 type AppPage = 'accueil' | 'explorer';
+type ViewMode = 'liste' | 'carte';
+
+function getStoredViewMode(): ViewMode {
+  try {
+    const stored = localStorage.getItem('ouatterir_viewMode');
+    if (stored === 'liste' || stored === 'carte') return stored;
+  } catch { /* noop */ }
+  return 'liste';
+}
 
 const App: React.FC = () => {
   const [activePage, setActivePage] = useState<AppPage>('accueil');
+  const [viewMode, setViewMode] = useState<ViewMode>(getStoredViewMode);
   const [filters, setFilters] = useState<SearchFilters>({});
   const [results, setResults] = useState<PaginatedResults<IdealResult> | null>(null);
   const [selectedCommune, setSelectedCommune] = useState<Commune | null>(null);
@@ -21,6 +33,10 @@ const App: React.FC = () => {
   const [compareOpen, setCompareOpen] = useState(false);
   const filtersRef = useRef(filters);
   const searchIdRef = useRef(0);
+
+  useEffect(() => {
+    try { localStorage.setItem('ouatterir_viewMode', viewMode); } catch { /* noop */ }
+  }, [viewMode]);
 
   const doSearch = async (f: SearchFilters, page: number = 1) => {
     const id = ++searchIdRef.current;
@@ -39,7 +55,7 @@ const App: React.FC = () => {
   useEffect(() => {
     filtersRef.current = filters;
     doSearch(filters);
-  }, [filtersKey]);
+  }, [filtersKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const removeFromCompare = (insee: string) => {
     setCompareList(prev => prev.filter(c => c.insee !== insee));
@@ -58,18 +74,25 @@ const App: React.FC = () => {
     doSearch(filtersRef.current, page);
   };
 
+  const handleMapOpenDrawer = async (insee: string) => {
+    const commune = await getCommuneByInsee(insee);
+    if (commune) setSelectedCommune(commune);
+  };
+
   const activeFilterCount =
     [filters.department, filters.bloc, filters.matchLevel, filters.riskLevel].filter(Boolean).length +
     (filters.equipmentFilters?.length ?? 0) +
     (filters.populationSizes?.length ?? 0) +
     (filters.geoTags?.length ?? 0);
 
+  const showMap = activePage === 'explorer' && viewMode === 'carte';
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-100 font-sans">
 
       {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 flex items-center justify-between">
+        <div className="max-w-[1400px] mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center space-x-2 py-3 flex-shrink-0">
             <div className="bg-indigo-600 p-1.5 rounded-lg">
               <svg className="text-white w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -124,23 +147,87 @@ const App: React.FC = () => {
           onSelectCommune={setSelectedCommune}
         />
       ) : (
-        <main className="flex-grow max-w-4xl mx-auto w-full px-4 py-6 space-y-4 pb-24">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-white/50 rounded-2xl border border-dashed border-slate-300">
-              <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
-              <p className="text-slate-500 text-sm font-medium">Recherche en cours...</p>
+        <>
+          {/* FilterBar — sticky under header */}
+          <FilterBar
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            filters={filters}
+            onFiltersChange={setFilters}
+            activeFilterCount={activeFilterCount}
+            onOpenFilters={() => setFiltersOpen(true)}
+          />
+
+          {/* Explorer content */}
+          {viewMode === 'liste' ? (
+            /* ── Liste only ── */
+            <main className="flex-grow max-w-4xl mx-auto w-full px-4 py-6 space-y-4 pb-24">
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-20 bg-white/50 rounded-2xl border border-dashed border-slate-300">
+                  <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+                  <p className="text-slate-500 text-sm font-medium">Recherche en cours...</p>
+                </div>
+              ) : results ? (
+                <ResultsList
+                  results={results}
+                  selectedInsee={selectedCommune?.insee}
+                  onSelectCommune={setSelectedCommune}
+                  onPageChange={handlePageChange}
+                  compareList={compareList}
+                  onToggleCompare={toggleCompare}
+                />
+              ) : null}
+            </main>
+          ) : (
+            /* ── Carte (+ liste on desktop) ── */
+            <div className="flex-grow flex flex-col sm:flex-row overflow-hidden">
+              {/* List panel — desktop only */}
+              <div className="hidden sm:block sm:w-[380px] sm:flex-shrink-0 sm:overflow-y-auto sm:border-r sm:border-slate-200 sm:bg-white">
+                <div className="px-4 py-4 space-y-4">
+                  {loading ? (
+                    <div className="flex flex-col items-center justify-center py-20">
+                      <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+                      <p className="text-slate-500 text-sm font-medium">Recherche en cours...</p>
+                    </div>
+                  ) : results ? (
+                    <ResultsList
+                      results={results}
+                      selectedInsee={selectedCommune?.insee}
+                      onSelectCommune={setSelectedCommune}
+                      onPageChange={handlePageChange}
+                      compareList={compareList}
+                      onToggleCompare={toggleCompare}
+                    />
+                  ) : null}
+                </div>
+              </div>
+
+              {/* Map panel */}
+              <div className="flex-grow relative" style={{ minHeight: 'calc(100vh - 105px)' }}>
+                <MapComponent
+                  filters={filters}
+                  selectedInsee={selectedCommune?.insee ?? null}
+                  onOpenDrawer={handleMapOpenDrawer}
+                  isVisible={showMap}
+                />
+              </div>
             </div>
-          ) : results ? (
-            <ResultsList
-              results={results}
-              selectedInsee={selectedCommune?.insee}
-              onSelectCommune={setSelectedCommune}
-              onPageChange={handlePageChange}
-              compareList={compareList}
-              onToggleCompare={toggleCompare}
-            />
-          ) : null}
-        </main>
+          )}
+
+          {/* Mobile bottom toggle — only on mobile */}
+          <div className={`sm:hidden fixed left-1/2 -translate-x-1/2 z-40 ${compareList.length > 0 ? 'bottom-20' : 'bottom-5'}`}>
+            <button
+              onClick={() => setViewMode(viewMode === 'liste' ? 'carte' : 'liste')}
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition-all"
+            >
+              {viewMode === 'liste' ? (
+                <><Map className="w-4 h-4" /> Carte</>
+              ) : (
+                <><List className="w-4 h-4" /> Liste</>
+              )}
+            </button>
+          </div>
+        </>
       )}
 
       {/* Compare tray */}
@@ -176,25 +263,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Floating filter button (Explorer page only) */}
-      {activePage === 'explorer' && (
-        <div className={`fixed left-1/2 -translate-x-1/2 z-40 ${compareList.length > 0 ? 'bottom-20' : 'bottom-5'}`}>
-          <button
-            onClick={() => setFiltersOpen(true)}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition-all"
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-            Filtres
-            {activeFilterCount > 0 && (
-              <span className="text-[10px] font-bold bg-white text-indigo-600 px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
-        </div>
-      )}
-
-      {/* Filter drawer (filters only) */}
+      {/* Filter drawer */}
       <FilterSheet
         filters={filters}
         onFiltersChange={setFilters}

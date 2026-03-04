@@ -1,78 +1,205 @@
-import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import MarkerClusterGroup from 'react-leaflet-cluster';
-import { Commune } from '../types';
+import React, { useEffect, useCallback, useRef, useState } from 'react';
+import { MapContainer, TileLayer, CircleMarker, useMap, useMapEvents } from 'react-leaflet';
+import { RefreshCw } from 'lucide-react';
 import L from 'leaflet';
+import { MapMarker, MapBounds, SearchFilters } from '../types';
+import { BLOC_COLORS } from '../constants';
+import { searchCommunesForMap } from '../services/communeService';
+import MapMarkerCard from './MapMarkerCard';
 
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
-import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
+import 'leaflet/dist/leaflet.css';
 
-const DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
+const FRANCE_CENTER: L.LatLngExpression = [46.5, 2.5];
+const FRANCE_ZOOM = 6;
 
-L.Marker.prototype.options.icon = DefaultIcon;
+function getBoundsFromMap(map: L.Map): MapBounds {
+  const b = map.getBounds();
+  return {
+    latMin: b.getSouth(),
+    latMax: b.getNorth(),
+    lngMin: b.getWest(),
+    lngMax: b.getEast(),
+  };
+}
+
+// ── Public component ──
 
 interface Props {
-  center: [number, number];
-  communes: Commune[];
-  selectedId?: string;
+  filters: SearchFilters;
+  selectedInsee: string | null;
+  onOpenDrawer: (insee: string) => void;
   isVisible?: boolean;
 }
 
-const MapComponent: React.FC<Props> = ({ center, communes, selectedId, isVisible }) => {
-  const [map, setMap] = useState<L.Map | null>(null);
+const MapComponent: React.FC<Props> = ({ filters, selectedInsee, onOpenDrawer, isVisible }) => {
+  const [markers, setMarkers] = useState<MapMarker[]>([]);
+  const [hasMoved, setHasMoved] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
 
   useEffect(() => {
-    if (map) {
-      map.invalidateSize();
-      setTimeout(() => map.invalidateSize(), 100);
-      setTimeout(() => map.invalidateSize(), 300);
+    if (mapRef.current && isVisible) {
+      setTimeout(() => mapRef.current?.invalidateSize(), 100);
     }
-  }, [map, isVisible]);
+  }, [isVisible]);
 
+  // Reset selected marker when filters change
   useEffect(() => {
-    if (map) {
-      map.flyTo(center, 12, { animate: true });
-    }
-  }, [center, map]);
+    setSelectedMarker(null);
+  }, [JSON.stringify(filters)]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleMarkersLoaded = useCallback((data: MapMarker[]) => {
+    setMarkers(data);
+    setHasMoved(false);
+  }, []);
+
+  const handleMarkerClick = useCallback((marker: MapMarker) => {
+    setSelectedMarker(marker);
+  }, []);
 
   return (
-    <div className="h-full w-full rounded-xl overflow-hidden z-0 border border-slate-200 shadow-inner">
+    <div className="relative h-full w-full">
       <MapContainer
-        center={center}
-        zoom={12}
-        scrollWheelZoom={false}
-        className="h-full w-full"
-        ref={setMap}
+        center={FRANCE_CENTER}
+        zoom={FRANCE_ZOOM}
+        scrollWheelZoom
+        className="h-full w-full z-0"
+        ref={mapRef}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <MarkerClusterGroup chunkedLoading>
-          {communes.map((commune) => (
-            <Marker
-              key={commune.insee}
-              position={commune.coordinates}
-              opacity={commune.insee === selectedId ? 1 : 0.7}
-            >
-              <Popup>
-                <div className="text-center">
-                  <h3 className="font-bold text-slate-800">{commune.name}</h3>
-                  <p className="text-slate-600 text-xs">{commune.stability}</p>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MarkerClusterGroup>
+        <MapInner
+          filters={filters}
+          selectedInsee={selectedInsee}
+          onMarkersLoaded={handleMarkersLoaded}
+          onMarkerClick={handleMarkerClick}
+          markers={markers}
+          refreshKey={refreshKey}
+          onMoveChange={setHasMoved}
+        />
       </MapContainer>
+
+      {/* "Rechercher dans cette zone" */}
+      {hasMoved && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[400]">
+          <button
+            onClick={() => setRefreshKey(k => k + 1)}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-2xl shadow-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors active:scale-95"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-indigo-600" />
+            Rechercher dans cette zone
+          </button>
+        </div>
+      )}
+
+      {selectedMarker && (
+        <MapMarkerCard
+          marker={selectedMarker}
+          onClose={() => setSelectedMarker(null)}
+          onOpenDrawer={onOpenDrawer}
+        />
+      )}
     </div>
+  );
+};
+
+// Inner component that lives inside MapContainer and can use hooks
+interface MapInnerProps {
+  filters: SearchFilters;
+  selectedInsee: string | null;
+  onMarkersLoaded: (markers: MapMarker[]) => void;
+  onMarkerClick: (marker: MapMarker) => void;
+  markers: MapMarker[];
+  refreshKey: number;
+  onMoveChange: (moved: boolean) => void;
+}
+
+const MapInner: React.FC<MapInnerProps> = ({
+  filters,
+  selectedInsee,
+  onMarkersLoaded,
+  onMarkerClick,
+  markers,
+  refreshKey,
+  onMoveChange,
+}) => {
+  const map = useMap();
+  const isInitialLoad = useRef(true);
+  const skipNextMove = useRef(false);
+
+  const loadMarkers = useCallback(async () => {
+    const data = await searchCommunesForMap(filters, getBoundsFromMap(map));
+    onMarkersLoaded(data);
+  }, [filters, map, onMarkersLoaded]);
+
+  // Initial load
+  useEffect(() => {
+    if (!isInitialLoad.current) return;
+    isInitialLoad.current = false;
+    const timer = setTimeout(() => loadMarkers(), 150);
+    return () => clearTimeout(timer);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reload when filters change
+  useEffect(() => {
+    if (isInitialLoad.current) return;
+    onMoveChange(false);
+    loadMarkers();
+  }, [JSON.stringify(filters)]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reload when user clicks refresh
+  useEffect(() => {
+    if (refreshKey === 0) return;
+    onMoveChange(false);
+    loadMarkers();
+  }, [refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fit to department bounds when markers first arrive with dept filter
+  useEffect(() => {
+    if (!filters.department || markers.length === 0) return;
+    const bounds = L.latLngBounds(markers.map(m => [m.lat, m.lng] as L.LatLngTuple));
+    if (bounds.isValid()) {
+      skipNextMove.current = true;
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 });
+    }
+  }, [filters.department, markers.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useMapEvents({
+    moveend: () => {
+      if (isInitialLoad.current) return;
+      if (skipNextMove.current) {
+        skipNextMove.current = false;
+        return;
+      }
+      onMoveChange(true);
+    },
+  });
+
+  return (
+    <>
+      {markers.map((marker) => {
+        const color = marker.latestBloc ? (BLOC_COLORS[marker.latestBloc] ?? '#94a3b8') : '#94a3b8';
+        const selected = marker.insee === selectedInsee;
+        return (
+          <CircleMarker
+            key={marker.insee}
+            center={[marker.lat, marker.lng]}
+            radius={selected ? 7 : 5}
+            pathOptions={{
+              fillColor: color,
+              color: '#fff',
+              weight: selected ? 3 : 2,
+              fillOpacity: selected ? 1 : 0.85,
+              opacity: 1,
+            }}
+            eventHandlers={{ click: () => onMarkerClick(marker) }}
+          />
+        );
+      })}
+    </>
   );
 };
 

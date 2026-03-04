@@ -121,3 +121,20 @@ export interface EquipmentSummary {
   domainLabel: string;
   totalCount: number;
 }
+
+export interface MapMarker {
+  insee: string;
+  name: string;
+  zipcode: string;
+  lat: number;
+  lng: number;
+  latestBloc: string | null;
+  matchLevel: MatchLevel | 'all';
+}
+
+export interface MapBounds {
+  latMin: number;
+  latMax: number;
+  lngMin: number;
+  lngMax: number;
+}
