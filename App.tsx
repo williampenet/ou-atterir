@@ -180,7 +180,7 @@ const App: React.FC = () => {
             </main>
           ) : (
             /* ── Carte (+ liste on desktop) ── */
-            <div className="flex-grow flex flex-col sm:flex-row overflow-hidden">
+            <div className="flex flex-col sm:flex-row overflow-hidden" style={{ height: 'calc(100vh - 105px)' }}>
               {/* List panel — desktop only */}
               <div className="hidden sm:block sm:w-[380px] sm:flex-shrink-0 sm:overflow-y-auto sm:border-r sm:border-slate-200 sm:bg-white">
                 <div className="px-4 py-4 space-y-4">
@@ -203,7 +203,7 @@ const App: React.FC = () => {
               </div>
 
               {/* Map panel */}
-              <div className="flex-grow relative" style={{ minHeight: 'calc(100vh - 105px)' }}>
+              <div className="flex-grow relative h-full">
                 <MapComponent
                   filters={filters}
                   selectedInsee={selectedCommune?.insee ?? null}

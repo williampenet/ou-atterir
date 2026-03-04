@@ -131,15 +131,32 @@ const MapInner: React.FC<MapInnerProps> = ({
   const skipNextMove = useRef(false);
 
   const loadMarkers = useCallback(async () => {
-    const data = await searchCommunesForMap(filters, getBoundsFromMap(map));
-    onMarkersLoaded(data);
+    const bounds = getBoundsFromMap(map);
+    try {
+      const data = await searchCommunesForMap(filters, bounds);
+      onMarkersLoaded(data);
+    } catch {
+      onMarkersLoaded([]);
+    }
   }, [filters, map, onMarkersLoaded]);
 
-  // Initial load
+  // Initial load — wait for container to have real dimensions before loading
   useEffect(() => {
     if (!isInitialLoad.current) return;
-    isInitialLoad.current = false;
-    const timer = setTimeout(() => loadMarkers(), 150);
+
+    const tryLoad = () => {
+      map.invalidateSize();
+      const h = map.getContainer().clientHeight;
+      const bounds = getBoundsFromMap(map);
+      if (h > 0 && bounds.latMin !== bounds.latMax) {
+        isInitialLoad.current = false;
+        loadMarkers();
+      } else {
+        requestAnimationFrame(tryLoad);
+      }
+    };
+
+    const timer = setTimeout(tryLoad, 50);
     return () => clearTimeout(timer);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -374,7 +374,8 @@ export const searchCommunesForMap = async (
   limit = 300
 ): Promise<MapMarker[]> => {
   const rpcParams: Record<string, unknown> = {
-    result_limit: limit,
+    page_limit: limit,
+    page_offset: 0,
     target_risk_level: filters.riskLevel ?? null,
   };
 
@@ -386,25 +387,26 @@ export const searchCommunesForMap = async (
   if (filters.geoTags?.length) rpcParams.target_geo_tags = filters.geoTags;
   if (filters.prixM2Max) rpcParams.target_prix_m2_max = filters.prixM2Max;
   if (filters.airQuality) rpcParams.target_air_quality = filters.airQuality;
-  if (bounds) {
-    rpcParams.lat_min = bounds.latMin;
-    rpcParams.lat_max = bounds.latMax;
-    rpcParams.lng_min = bounds.lngMin;
-    rpcParams.lng_max = bounds.lngMax;
-  }
 
-  const { data, error } = await supabase.rpc('search_communes_map', rpcParams);
+  const { data, error } = await supabase.rpc('search_communes', rpcParams);
   if (error || !data) return [];
 
-  return (data as { insee: string; name: string; zipcode: string; lat: number; lng: number; latest_bloc: string | null; match_level: string }[]).map(row => ({
+  const rows = (data as RpcResultRow[]);
+  const allMarkers = rows.map(row => ({
     insee: row.insee,
     name: row.name,
     zipcode: row.zipcode,
     lat: row.lat,
     lng: row.lng,
     latestBloc: row.latest_bloc,
-    matchLevel: row.match_level as MatchLevel | 'all',
+    matchLevel: (row.match_level === 'all' ? 'tendance' : row.match_level) as MatchLevel | 'all',
   }));
+
+  if (!bounds) return allMarkers;
+  return allMarkers.filter(m =>
+    m.lat >= bounds.latMin && m.lat <= bounds.latMax &&
+    m.lng >= bounds.lngMin && m.lng <= bounds.lngMax
+  );
 };
 
 export const getDvfStats = async (insee: string): Promise<DvfData> => {
