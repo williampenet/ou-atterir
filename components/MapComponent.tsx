@@ -129,6 +129,7 @@ const MapInner: React.FC<MapInnerProps> = ({
   const map = useMap();
   const isInitialLoad = useRef(true);
   const skipNextMove = useRef(false);
+  const lastFittedDept = useRef<string | null>(null);
 
   const loadMarkers = useCallback(async () => {
     const bounds = getBoundsFromMap(map);
@@ -174,15 +175,22 @@ const MapInner: React.FC<MapInnerProps> = ({
     loadMarkers();
   }, [refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fit to department bounds when markers first arrive with dept filter
+  // Fit to department bounds only when the department filter changes
   useEffect(() => {
     if (!filters.department || markers.length === 0) return;
+    if (lastFittedDept.current === filters.department) return;
+    lastFittedDept.current = filters.department;
     const bounds = L.latLngBounds(markers.map(m => [m.lat, m.lng] as L.LatLngTuple));
     if (bounds.isValid()) {
       skipNextMove.current = true;
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 });
     }
   }, [filters.department, markers.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset fitted department when filter is cleared
+  useEffect(() => {
+    if (!filters.department) lastFittedDept.current = null;
+  }, [filters.department]);
 
   useMapEvents({
     moveend: () => {
