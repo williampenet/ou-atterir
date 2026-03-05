@@ -28,10 +28,11 @@ interface Props {
   filters: SearchFilters;
   selectedInsee: string | null;
   onOpenDrawer: (insee: string) => void;
+  onClearDepartment?: () => void;
   isVisible?: boolean;
 }
 
-const MapComponent: React.FC<Props> = ({ filters, selectedInsee, onOpenDrawer, isVisible }) => {
+const MapComponent: React.FC<Props> = ({ filters, selectedInsee, onOpenDrawer, onClearDepartment, isVisible }) => {
   const [markers, setMarkers] = useState<MapMarker[]>([]);
   const [hasMoved, setHasMoved] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -86,7 +87,7 @@ const MapComponent: React.FC<Props> = ({ filters, selectedInsee, onOpenDrawer, i
       {hasMoved && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[400]">
           <button
-            onClick={() => setRefreshKey(k => k + 1)}
+            onClick={() => { if (filters.department && onClearDepartment) onClearDepartment(); else setRefreshKey(k => k + 1); }}
             className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-2xl shadow-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors active:scale-95"
           >
             <RefreshCw className="w-3.5 h-3.5 text-indigo-600" />

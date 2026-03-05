@@ -208,6 +208,7 @@ const App: React.FC = () => {
                   filters={filters}
                   selectedInsee={selectedCommune?.insee ?? null}
                   onOpenDrawer={handleMapOpenDrawer}
+                  onClearDepartment={() => setFilters(f => ({ ...f, department: undefined }))}
                   isVisible={showMap}
                 />
               </div>
