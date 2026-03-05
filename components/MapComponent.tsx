@@ -130,12 +130,21 @@ const MapInner: React.FC<MapInnerProps> = ({
   const isInitialLoad = useRef(true);
   const skipNextMove = useRef(false);
   const pendingFitDept = useRef<string | null>(null);
+  const prevDeptRef = useRef<string | undefined>(filters.department);
 
   const loadMarkers = useCallback(async () => {
-    const bounds = getBoundsFromMap(map);
+    const bounds = pendingFitDept.current ? null : getBoundsFromMap(map);
     try {
       const data = await searchCommunesForMap(filters, bounds);
       onMarkersLoaded(data);
+      if (pendingFitDept.current && data.length > 0) {
+        pendingFitDept.current = null;
+        const markerBounds = L.latLngBounds(data.map(m => [m.lat, m.lng] as L.LatLngTuple));
+        if (markerBounds.isValid()) {
+          skipNextMove.current = true;
+          map.fitBounds(markerBounds, { padding: [40, 40], maxZoom: 10 });
+        }
+      }
     } catch {
       onMarkersLoaded([]);
     }
@@ -151,6 +160,7 @@ const MapInner: React.FC<MapInnerProps> = ({
       const bounds = getBoundsFromMap(map);
       if (h > 0 && bounds.latMin !== bounds.latMax) {
         isInitialLoad.current = false;
+        if (filters.department) pendingFitDept.current = filters.department;
         loadMarkers();
       } else {
         requestAnimationFrame(tryLoad);
@@ -161,9 +171,13 @@ const MapInner: React.FC<MapInnerProps> = ({
     return () => clearTimeout(timer);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Reload when filters change
+  // Reload when filters change — set pendingFitDept BEFORE calling loadMarkers
   useEffect(() => {
     if (isInitialLoad.current) return;
+    if (filters.department !== prevDeptRef.current) {
+      pendingFitDept.current = filters.department ?? null;
+      prevDeptRef.current = filters.department;
+    }
     onMoveChange(false);
     loadMarkers();
   }, [JSON.stringify(filters)]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -174,23 +188,6 @@ const MapInner: React.FC<MapInnerProps> = ({
     onMoveChange(false);
     loadMarkers();
   }, [refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Mark department as needing fit when the filter changes
-  useEffect(() => {
-    pendingFitDept.current = filters.department ?? null;
-  }, [filters.department]);
-
-  // Fit bounds once markers arrive for a pending department
-  useEffect(() => {
-    if (!pendingFitDept.current || markers.length === 0) return;
-    if (pendingFitDept.current !== filters.department) return;
-    pendingFitDept.current = null;
-    const bounds = L.latLngBounds(markers.map(m => [m.lat, m.lng] as L.LatLngTuple));
-    if (bounds.isValid()) {
-      skipNextMove.current = true;
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 });
-    }
-  }, [markers]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useMapEvents({
     moveend: () => {
