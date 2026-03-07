@@ -84,30 +84,37 @@ function mapStability(value: string): StabilityLevel {
 }
 
 function toCommune(row: CommuneRow, nuances: Record<string, NuanceInfo>): Commune {
+  const history = (row.election_results || [])
+    .filter(e => (e.election_type || 'municipales') === 'municipales')
+    .map((e): ElectionResult => {
+      const n = nuances[e.winner_nuance];
+      return {
+        year: e.year,
+        electionType: 'municipales',
+        winnerNuance: e.winner_nuance,
+        winnerNuanceLabel: n?.label || e.winner_nuance,
+        winnerBloc: n?.bloc || '',
+        winnerName: e.winner_name,
+        score: e.score,
+        turnout: e.turnout,
+      };
+    });
+
+  const blocs = new Set(history.map(h => h.winnerBloc).filter(Boolean));
+  const stability = history.length >= 2 && blocs.size === 1
+    ? StabilityLevel.FORTERESSE
+    : StabilityLevel.EN_BALLOTTAGE;
+
   return {
     insee: row.insee,
     zipcode: row.zipcode,
     name: row.name,
     department: row.department,
     coordinates: [row.lat, row.lng],
-    stability: mapStability(row.stability),
+    stability,
     currentMayor: row.current_mayor,
     population: row.population ?? undefined,
-    history: (row.election_results || [])
-      .filter(e => (e.election_type || 'municipales') === 'municipales')
-      .map((e): ElectionResult => {
-        const n = nuances[e.winner_nuance];
-        return {
-          year: e.year,
-          electionType: 'municipales',
-          winnerNuance: e.winner_nuance,
-          winnerNuanceLabel: n?.label || e.winner_nuance,
-          winnerBloc: n?.bloc || '',
-          winnerName: e.winner_name,
-          score: e.score,
-          turnout: e.turnout,
-        };
-      }),
+    history,
   };
 }
 
