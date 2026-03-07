@@ -19,13 +19,23 @@ let communePointsCache: CommunePoint[] | null = null;
 async function getAllCommunePoints(): Promise<CommunePoint[]> {
   if (communePointsCache) return communePointsCache;
 
-  const { data, error } = await supabase
-    .from('communes')
-    .select('insee, lat, lng');
+  const allData: CommunePoint[] = [];
+  const batchSize = 1000;
+  let from = 0;
 
-  if (error || !data) return [];
+  while (true) {
+    const { data, error } = await supabase
+      .from('communes')
+      .select('insee, lat, lng')
+      .range(from, from + batchSize - 1);
 
-  communePointsCache = data as CommunePoint[];
+    if (error || !data || data.length === 0) break;
+    allData.push(...(data as CommunePoint[]));
+    if (data.length < batchSize) break;
+    from += batchSize;
+  }
+
+  communePointsCache = allData;
   return communePointsCache;
 }
 
