@@ -9,6 +9,7 @@ import ResultsList from './components/ResultsList';
 import CommuneDrawer from './components/CommuneDrawer';
 import CompareView from './components/CompareView';
 import MapComponent from './components/MapComponent';
+import StabilityBadge from './components/StabilityBadge';
 
 type AppPage = 'accueil' | 'explorer';
 type ViewMode = 'liste' | 'carte';
@@ -402,9 +403,12 @@ const SearchPage: React.FC<SearchPageProps> = ({ compareList, onToggleCompare, o
                 onClick={() => onSelectCommune(r.commune)}
               >
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center text-slate-400 text-[11px] mb-0.5">
-                    <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
-                    {r.commune.department}
+                  <div className="flex items-center justify-between mb-0.5">
+                    <div className="flex items-center text-slate-400 text-[11px]">
+                      <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
+                      {r.commune.department}
+                    </div>
+                    <StabilityBadge level={r.commune.stability} compact />
                   </div>
                   <p className="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">
                     {r.commune.name} <span className="font-medium text-slate-400">({r.commune.zipcode})</span>

@@ -290,6 +290,13 @@ export const searchCommunesByText = async (query: string): Promise<IdealResult[]
     const latest = muniResults.sort((a, b) => b.year - a.year)[0];
     const nuance = latest ? nuances[latest.winner_nuance] : undefined;
 
+    const muniBlocs = new Set(
+      muniResults.map(e => nuances[e.winner_nuance]?.bloc).filter(Boolean)
+    );
+    const stability = muniResults.length >= 2 && muniBlocs.size === 1
+      ? StabilityLevel.FORTERESSE
+      : StabilityLevel.EN_BALLOTTAGE;
+
     return {
       commune: {
         insee: row.insee,
@@ -297,12 +304,12 @@ export const searchCommunesByText = async (query: string): Promise<IdealResult[]
         name: row.name,
         department: row.department,
         coordinates: [row.lat, row.lng] as [number, number],
-        stability: mapStability(row.stability),
+        stability,
         currentMayor: row.current_mayor,
         population: row.population ?? undefined,
         history: [],
       },
-      matchLevel: 'tendance' as MatchLevel,
+      matchLevel: (stability === StabilityLevel.FORTERESSE ? 'forteresse' : 'tendance') as MatchLevel,
       latestNuance: latest?.winner_nuance || '',
       latestNuanceLabel: nuance?.label || latest?.winner_nuance || '',
       latestBloc: nuance?.bloc || '',
