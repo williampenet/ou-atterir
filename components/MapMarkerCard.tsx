@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Shield, TrendingUp, MapPin, ChevronRight } from 'lucide-react';
+import { X, Shield, Activity, MapPin, ChevronRight } from 'lucide-react';
 import { MapMarker } from '../types';
 import { BLOC_COLORS } from '../constants';
 
@@ -37,8 +37,8 @@ const MapMarkerCard: React.FC<Props> = ({ marker, onClose, onOpenDrawer }) => {
                       ? 'bg-emerald-100 text-emerald-700'
                       : 'bg-amber-100 text-amber-700'
                   }`}>
-                    {isForteresse ? <Shield className="w-2.5 h-2.5" /> : <TrendingUp className="w-2.5 h-2.5" />}
-                    {isForteresse ? 'Forteresse' : 'Tendance'}
+                    {isForteresse ? <Shield className="w-2.5 h-2.5" /> : <Activity className="w-2.5 h-2.5" />}
+                    {isForteresse ? 'Forteresse' : 'En ballottage'}
                   </span>
                 )}
               </div>

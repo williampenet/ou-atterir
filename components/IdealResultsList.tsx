@@ -1,7 +1,7 @@
 import React from 'react';
 import { IdealResult, PaginatedResults } from '../types';
 import { NUANCE_COLORS } from '../constants';
-import { MapPin, Shield, TrendingUp, Compass, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MapPin, Shield, Activity, Compass, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Props {
   results: PaginatedResults<IdealResult>;
@@ -42,7 +42,7 @@ const IdealResultsList: React.FC<Props> = ({ results, onSelectCommune, onPageCha
       {tendances.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700 uppercase tracking-wider">
-            <TrendingUp className="w-3.5 h-3.5" /> Tendance récente
+            <Activity className="w-3.5 h-3.5" /> En ballottage
           </div>
           {tendances.map(r => <ResultCard key={r.commune.insee} result={r} onClick={() => onSelectCommune(r.commune)} />)}
         </div>
@@ -109,7 +109,7 @@ const ResultCard: React.FC<{ result: IdealResult; onClick: () => void }> = ({ re
             ? 'bg-emerald-100 text-emerald-700'
             : 'bg-amber-100 text-amber-700'
         }`}>
-          {matchLevel === 'forteresse' ? 'Forteresse' : 'Tendance'}
+          {matchLevel === 'forteresse' ? 'Forteresse' : 'En ballottage'}
         </span>
       </div>
       {displayNuance && displayWinner && displayYear && displayScore && (

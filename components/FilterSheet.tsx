@@ -3,7 +3,7 @@ import { PoliticalBloc, SearchFilters, MatchLevel, EquipmentFilterKey, Populatio
 import { BLOC_COLORS, EQUIPMENT_CATEGORIES, POPULATION_SIZES, RISK_LEVELS, GEO_TAGS, PRIX_M2_RANGES, AIR_QUALITY_LEVELS } from '../constants';
 import { getDepartments } from '../services/communeService';
 import {
-  X, SlidersHorizontal, Shield, TrendingUp,
+  X, SlidersHorizontal, Shield, Activity,
   ShoppingBag, GraduationCap, Heart, Train, Dumbbell,
   Users, AlertTriangle, ChevronDown, Check,
   Waves, Mountain, TreePine, Euro, Wind,
@@ -195,7 +195,7 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
                 onClick={() => update({ matchLevel: matchLevel === 'tendance' ? undefined : 'tendance' })}
                 activeClass="bg-amber-50 border-amber-300 text-amber-700"
               >
-                <TrendingUp className="w-3.5 h-3.5" /> Tendance
+                <Activity className="w-3.5 h-3.5" /> En ballottage
               </ToggleButton>
             </div>
           </Section>

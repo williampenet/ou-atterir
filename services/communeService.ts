@@ -93,19 +93,21 @@ function toCommune(row: CommuneRow, nuances: Record<string, NuanceInfo>): Commun
     stability: mapStability(row.stability),
     currentMayor: row.current_mayor,
     population: row.population ?? undefined,
-    history: (row.election_results || []).map((e): ElectionResult => {
-      const n = nuances[e.winner_nuance];
-      return {
-        year: e.year,
-        electionType: e.election_type || 'municipales',
-        winnerNuance: e.winner_nuance,
-        winnerNuanceLabel: n?.label || e.winner_nuance,
-        winnerBloc: n?.bloc || '',
-        winnerName: e.winner_name,
-        score: e.score,
-        turnout: e.turnout,
-      };
-    }),
+    history: (row.election_results || [])
+      .filter(e => (e.election_type || 'municipales') === 'municipales')
+      .map((e): ElectionResult => {
+        const n = nuances[e.winner_nuance];
+        return {
+          year: e.year,
+          electionType: 'municipales',
+          winnerNuance: e.winner_nuance,
+          winnerNuanceLabel: n?.label || e.winner_nuance,
+          winnerBloc: n?.bloc || '',
+          winnerName: e.winner_name,
+          score: e.score,
+          turnout: e.turnout,
+        };
+      }),
   };
 }
 
@@ -251,7 +253,7 @@ export const searchCommunesByText = async (query: string): Promise<IdealResult[]
 
   let q = supabase
     .from('communes')
-    .select('id, insee, zipcode, name, department, lat, lng, stability, current_mayor, population, election_results(year, winner_nuance, winner_name, score, turnout)')
+    .select('id, insee, zipcode, name, department, lat, lng, stability, current_mayor, population, election_results(year, election_type, winner_nuance, winner_name, score, turnout)')
     .limit(30);
 
   if (isPostal) {
@@ -275,8 +277,10 @@ export const searchCommunesByText = async (query: string): Promise<IdealResult[]
   }
 
   return (data as CommuneRow[]).map((row) => {
-    const latest = row.election_results
-      ?.sort((a, b) => b.year - a.year)[0];
+    const muniResults = (row.election_results || []).filter(
+      e => (e.election_type || 'municipales') === 'municipales'
+    );
+    const latest = muniResults.sort((a, b) => b.year - a.year)[0];
     const nuance = latest ? nuances[latest.winner_nuance] : undefined;
 
     return {

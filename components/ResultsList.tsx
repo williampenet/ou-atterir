@@ -1,7 +1,7 @@
 import React from 'react';
 import { Commune, IdealResult, PaginatedResults } from '../types';
 import { BLOC_COLORS } from '../constants';
-import { MapPin, Shield, TrendingUp, Search, ChevronLeft, ChevronRight, Scale } from 'lucide-react';
+import { MapPin, Shield, Activity, Search, ChevronLeft, ChevronRight, Scale } from 'lucide-react';
 
 interface Props {
   results: PaginatedResults<IdealResult>;
@@ -114,8 +114,8 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, isSelected, onClick, in
               ? 'bg-emerald-100 text-emerald-700'
               : 'bg-amber-100 text-amber-700'
           }`}>
-            {matchLevel === 'forteresse' ? <Shield className="w-2.5 h-2.5" /> : <TrendingUp className="w-2.5 h-2.5" />}
-            {matchLevel === 'forteresse' ? 'Forteresse' : 'Tendance'}
+            {matchLevel === 'forteresse' ? <Shield className="w-2.5 h-2.5" /> : <Activity className="w-2.5 h-2.5" />}
+            {matchLevel === 'forteresse' ? 'Forteresse' : 'En ballottage'}
           </span>
           <div
             role="checkbox"
