@@ -222,12 +222,13 @@ export const searchCommunes = async (
     supabase.rpc('count_communes', countParams),
   ]);
 
+  const total = (countRes.data as number) || 0;
+
   if (resultsRes.error) {
-    return { data: [], total: 0, page, pageSize, hasMore: false };
+    return { data: [], total, page, pageSize, hasMore: false };
   }
 
   const rows = (resultsRes.data || []) as RpcResultRow[];
-  const total = (countRes.data as number) || 0;
 
   return {
     data: rows.map(rpcRowToResult),
@@ -389,6 +390,7 @@ export const searchCommunesForMap = async (
   if (filters.airQuality) rpcParams.target_air_quality = filters.airQuality;
 
   const { data, error } = await supabase.rpc('search_communes', rpcParams);
+
   if (error || !data) return [];
 
   const rows = (data as RpcResultRow[]);
