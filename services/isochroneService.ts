@@ -9,6 +9,35 @@ const ORS_PROFILES: Record<string, string> = {
   driving: 'driving-car',
 };
 
+const STATION_CATCHMENT_KM = 10;
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function extractCentroids(geom: { type: string; coordinates: number[][][][] | number[][][] }): { lat: number; lng: number }[] {
+  const polygons: number[][][][] = geom.type === 'MultiPolygon'
+    ? (geom.coordinates as number[][][][])
+    : [geom.coordinates as number[][][]];
+
+  return polygons.map(polygon => {
+    const ring = polygon[0];
+    if (!ring?.length) return { lat: 0, lng: 0 };
+    let sumLng = 0, sumLat = 0;
+    for (const [lng, lat] of ring) {
+      sumLng += lng;
+      sumLat += lat;
+    }
+    return { lng: sumLng / ring.length, lat: sumLat / ring.length };
+  }).filter(c => c.lat !== 0 || c.lng !== 0);
+}
+
 interface CommunePoint {
   insee: string;
   lat: number;
@@ -50,14 +79,6 @@ function pointInPolygon(lng: number, lat: number, ring: number[][]): boolean {
     }
   }
   return inside;
-}
-
-function pointInMultiPolygon(lng: number, lat: number, multiPolygon: number[][][][]): boolean {
-  for (const polygon of multiPolygon) {
-    const outerRing = polygon[0];
-    if (outerRing && pointInPolygon(lng, lat, outerRing)) return true;
-  }
-  return false;
 }
 
 function getNextWeekdayMorning(): string {
@@ -125,6 +146,23 @@ export async function computeIsochroneInsees(
     .map(p => p.insee);
 }
 
+async function findNearestSncfStop(
+  lat: number,
+  lng: number,
+  apiKey: string,
+): Promise<string | null> {
+  const url = `https://api.sncf.com/v1/coverage/sncf/coord/${lng};${lat}/places_nearby?type[]=stop_area&count=1&distance=50000`;
+
+  const res = await fetch(url, {
+    headers: { 'Authorization': `Basic ${btoa(apiKey + ':')}` },
+  });
+
+  if (!res.ok) return null;
+
+  const json = await res.json();
+  return json?.places_nearby?.[0]?.id ?? null;
+}
+
 async function computeTrainIsochrone(
   lat: number,
   lng: number,
@@ -136,11 +174,17 @@ async function computeTrainIsochrone(
     return [];
   }
 
+  const stopId = await findNearestSncfStop(lat, lng, apiKey);
+  if (!stopId) {
+    console.error('No SNCF stop found near coordinates');
+    return [];
+  }
+
   const durationSeconds = durationMinutes * 60;
   const datetime = getNextWeekdayMorning();
 
   const params = new URLSearchParams({
-    from: `${lng};${lat}`,
+    from: stopId,
     'boundary_duration[]': String(durationSeconds),
     datetime,
   });
@@ -162,17 +206,11 @@ async function computeTrainIsochrone(
 
   const geom = isochrone.geojson;
   const points = await getAllCommunePoints();
+  const stationCentroids = extractCentroids(geom);
 
-  if (geom.type === 'MultiPolygon') {
-    return points
-      .filter(p => pointInMultiPolygon(p.lng, p.lat, geom.coordinates))
-      .map(p => p.insee);
-  }
+  const matched = points.filter(p =>
+    stationCentroids.some(c => haversineKm(p.lat, p.lng, c.lat, c.lng) <= STATION_CATCHMENT_KM)
+  );
 
-  const outerRing = geom.coordinates?.[0];
-  if (!outerRing?.length) return [];
-
-  return points
-    .filter(p => pointInPolygon(p.lng, p.lat, outerRing))
-    .map(p => p.insee);
+  return matched.map(p => p.insee);
 }
