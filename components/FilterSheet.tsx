@@ -268,7 +268,7 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
                   {travelFilter.mode === 'train' && (
                     <div className="flex items-start gap-2 text-[11px] text-sky-600 bg-sky-50 border border-sky-200 rounded-lg px-3 py-2">
                       <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-                      <span>Estimation basée sur la distance à vol d'oiseau (vitesse moyenne TER ~60 km/h). Les résultats seront affinés avec les horaires SNCF prochainement.</span>
+                      <span>Basé sur les horaires SNCF (TGV, TER, Intercités). Calculé pour un trajet en semaine à 8h.</span>
                     </div>
                   )}
 
