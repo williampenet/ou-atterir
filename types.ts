@@ -104,6 +104,17 @@ export interface DvfData {
   transactionsDerniereAnnee: number;
 }
 
+export type TransportMode = 'cycling' | 'driving';
+
+export interface TravelFilter {
+  address: string;
+  lat: number;
+  lng: number;
+  mode: TransportMode;
+  duration: number;
+  insees?: string[];
+}
+
 export interface SearchFilters {
   department?: string;
   bloc?: PoliticalBloc;
@@ -114,6 +125,7 @@ export interface SearchFilters {
   geoTags?: GeoTag[];
   prixM2Max?: number;
   airQuality?: AirQuality;
+  travelFilter?: TravelFilter;
 }
 
 export interface EquipmentSummary {

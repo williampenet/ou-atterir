@@ -1,4 +1,4 @@
-import { PoliticalBloc, StabilityLevel, EquipmentDomain, EquipmentCategory, PopulationSize, RiskLevel, GeoTag, MarketTension, AirQuality } from './types';
+import { PoliticalBloc, StabilityLevel, EquipmentDomain, EquipmentCategory, PopulationSize, RiskLevel, GeoTag, MarketTension, AirQuality, TransportMode } from './types';
 
 export const BLOC_COLORS: Record<string, string> = {
   [PoliticalBloc.EXTRÊME_GAUCHE]: '#b91c1c',
@@ -86,6 +86,13 @@ export const AIR_QUALITY_LEVELS: Record<AirQuality, { label: string; description
   degradee: { label: 'Dégradée', description: 'PM2.5 7–9 µg/m³', color: 'bg-amber-50 border-amber-300 text-amber-700' },
   mauvaise: { label: 'Mauvaise', description: 'PM2.5 > 9 µg/m³', color: 'bg-red-50 border-red-300 text-red-700' },
 };
+
+export const TRANSPORT_MODES: { key: TransportMode; label: string; icon: string }[] = [
+  { key: 'cycling', label: 'Vélo', icon: 'Bike' },
+  { key: 'driving', label: 'Voiture', icon: 'Car' },
+];
+
+export const TRAVEL_DURATIONS = [15, 30, 45, 60];
 
 export const PRIX_M2_RANGES = [
   { key: 1500, label: '< 1 500 €/m²' },

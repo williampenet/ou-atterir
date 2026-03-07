@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { PoliticalBloc, SearchFilters, MatchLevel, EquipmentFilterKey, PopulationSize, RiskLevel, GeoTag, AirQuality } from '../types';
-import { BLOC_COLORS, EQUIPMENT_CATEGORIES, POPULATION_SIZES, RISK_LEVELS, GEO_TAGS, PRIX_M2_RANGES, AIR_QUALITY_LEVELS } from '../constants';
+import { PoliticalBloc, SearchFilters, MatchLevel, EquipmentFilterKey, PopulationSize, RiskLevel, GeoTag, AirQuality, TransportMode } from '../types';
+import { BLOC_COLORS, EQUIPMENT_CATEGORIES, POPULATION_SIZES, RISK_LEVELS, GEO_TAGS, PRIX_M2_RANGES, AIR_QUALITY_LEVELS, TRANSPORT_MODES, TRAVEL_DURATIONS } from '../constants';
 import { getDepartments } from '../services/communeService';
+import { computeIsochroneInsees } from '../services/isochroneService';
+import { GeocodingResult } from '../services/geocodingService';
+import AddressAutocomplete from './AddressAutocomplete';
 import {
   X, SlidersHorizontal, Shield, Activity,
   ShoppingBag, GraduationCap, Heart, Train, Dumbbell,
   Users, AlertTriangle, ChevronDown, Check,
   Waves, Mountain, TreePine, Euro, Wind,
+  Navigation, Bike, Car, Clock, Loader2,
 } from 'lucide-react';
 
 interface Props {
@@ -37,9 +41,12 @@ const GEO_TAG_ICONS: Record<GeoTag, React.ReactNode> = {
   campagne: <TreePine className="w-3.5 h-3.5" />,
 };
 
+const TRANSPORT_ICONS: Record<string, React.FC<{ className?: string }>> = { Bike, Car };
+
 const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose, resultCount }) => {
   const [departments, setDepartments] = useState<string[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [isochroneLoading, setIsochroneLoading] = useState(false);
 
   const department = filters.department ?? '';
   const bloc = (filters.bloc as string) ?? '';
@@ -50,6 +57,7 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
   const selectedGeoTags = filters.geoTags ?? [];
   const prixM2Max = filters.prixM2Max;
   const airQuality = (filters.airQuality as string) ?? '';
+  const travelFilter = filters.travelFilter;
 
   useEffect(() => {
     getDepartments().then(setDepartments);
@@ -69,8 +77,57 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
     return () => document.removeEventListener('keydown', handleKey);
   }, [open, onClose]);
 
+  const travelKey = travelFilter
+    ? `${travelFilter.lat}-${travelFilter.lng}-${travelFilter.mode}-${travelFilter.duration}`
+    : '';
+
+  useEffect(() => {
+    if (!travelFilter?.lat || !travelFilter?.mode || !travelFilter?.duration) return;
+    if (travelFilter.insees) return;
+
+    let cancelled = false;
+    setIsochroneLoading(true);
+
+    computeIsochroneInsees(travelFilter.lat, travelFilter.lng, travelFilter.mode, travelFilter.duration)
+      .then(insees => {
+        if (!cancelled) {
+          onFiltersChange({
+            ...filters,
+            travelFilter: { ...travelFilter, insees },
+          });
+        }
+      })
+      .catch(console.error)
+      .finally(() => { if (!cancelled) setIsochroneLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [travelKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const update = (patch: Partial<SearchFilters>) => {
     onFiltersChange({ ...filters, ...patch });
+  };
+
+  const handleAddressSelect = (result: GeocodingResult) => {
+    const base = { address: result.label, lat: result.lat, lng: result.lng };
+    if (travelFilter?.mode && travelFilter?.duration) {
+      update({ travelFilter: { ...base, mode: travelFilter.mode, duration: travelFilter.duration } });
+    } else {
+      update({ travelFilter: { ...base, mode: travelFilter?.mode ?? 'cycling', duration: travelFilter?.duration ?? 30 } });
+    }
+  };
+
+  const handleAddressClear = () => {
+    update({ travelFilter: undefined });
+  };
+
+  const handleTransportMode = (mode: TransportMode) => {
+    if (!travelFilter?.lat) return;
+    update({ travelFilter: { ...travelFilter, mode, insees: undefined } });
+  };
+
+  const handleTravelDuration = (duration: number) => {
+    if (!travelFilter?.lat) return;
+    update({ travelFilter: { ...travelFilter, duration, insees: undefined } });
   };
 
   const toggleEquipment = (key: EquipmentFilterKey) => {
@@ -106,7 +163,8 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
     [department, bloc, matchLevel, riskLevel, prixM2Max, airQuality].filter(Boolean).length +
     selectedEquipment.length +
     selectedSizes.length +
-    selectedGeoTags.length;
+    selectedGeoTags.length +
+    (travelFilter?.insees ? 1 : 0);
 
   const handleReset = () => {
     onFiltersChange({});
@@ -154,6 +212,74 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
 
         {/* Scrollable content */}
         <div className="flex-grow overflow-y-auto px-5 py-4 space-y-5">
+
+          {/* Travel time */}
+          <Section label="Temps de trajet">
+            <div className="space-y-3">
+              <AddressAutocomplete
+                value={travelFilter?.address ?? ''}
+                onSelect={handleAddressSelect}
+                onClear={handleAddressClear}
+              />
+
+              {travelFilter?.lat && (
+                <>
+                  <div>
+                    <span className="block text-[10px] text-slate-400 mb-1.5">Mode de transport</span>
+                    <div className="flex gap-2">
+                      {TRANSPORT_MODES.map(({ key, label, icon }) => {
+                        const Icon = TRANSPORT_ICONS[icon];
+                        return (
+                          <ToggleButton
+                            key={key}
+                            active={travelFilter.mode === key}
+                            onClick={() => handleTransportMode(key)}
+                            activeClass={key === 'cycling'
+                              ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                              : 'bg-slate-100 border-slate-300 text-slate-600'}
+                          >
+                            {Icon && <Icon className="w-3.5 h-3.5" />}
+                            {label}
+                          </ToggleButton>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="block text-[10px] text-slate-400 mb-1.5">Durée maximale</span>
+                    <div className="flex gap-2">
+                      {TRAVEL_DURATIONS.map(d => (
+                        <ToggleButton
+                          key={d}
+                          active={travelFilter.duration === d}
+                          onClick={() => handleTravelDuration(d)}
+                          activeClass="bg-indigo-50 border-indigo-300 text-indigo-700"
+                        >
+                          <Clock className="w-3.5 h-3.5" />
+                          {d} min
+                        </ToggleButton>
+                      ))}
+                    </div>
+                  </div>
+
+                  {isochroneLoading && (
+                    <div className="flex items-center gap-2 text-xs text-slate-400 py-1">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Calcul de la zone accessible...
+                    </div>
+                  )}
+
+                  {travelFilter.insees && !isochroneLoading && (
+                    <div className="flex items-center gap-2 text-xs text-emerald-600 py-1">
+                      <Navigation className="w-3.5 h-3.5" />
+                      {travelFilter.insees.length} commune{travelFilter.insees.length > 1 ? 's' : ''} accessible{travelFilter.insees.length > 1 ? 's' : ''}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </Section>
 
           {/* Department */}
           <Section label="Département">

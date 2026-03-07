@@ -84,7 +84,8 @@ const App: React.FC = () => {
     [filters.department, filters.bloc, filters.matchLevel, filters.riskLevel].filter(Boolean).length +
     (filters.equipmentFilters?.length ?? 0) +
     (filters.populationSizes?.length ?? 0) +
-    (filters.geoTags?.length ?? 0);
+    (filters.geoTags?.length ?? 0) +
+    (filters.travelFilter?.insees ? 1 : 0);
 
   const showMap = activePage === 'explorer' && viewMode === 'carte';
 

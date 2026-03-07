@@ -213,6 +213,7 @@ export const searchCommunes = async (
   if (filters.geoTags?.length) rpcParams.target_geo_tags = filters.geoTags;
   if (filters.prixM2Max) rpcParams.target_prix_m2_max = filters.prixM2Max;
   if (filters.airQuality) rpcParams.target_air_quality = filters.airQuality;
+  if (filters.travelFilter?.insees) rpcParams.target_insee_list = filters.travelFilter.insees;
 
   const countParams: Record<string, unknown> = {
     target_risk_level: filters.riskLevel ?? null,
@@ -225,6 +226,7 @@ export const searchCommunes = async (
   if (filters.geoTags?.length) countParams.target_geo_tags = filters.geoTags;
   if (filters.prixM2Max) countParams.target_prix_m2_max = filters.prixM2Max;
   if (filters.airQuality) countParams.target_air_quality = filters.airQuality;
+  if (filters.travelFilter?.insees) countParams.target_insee_list = filters.travelFilter.insees;
 
   const [resultsRes, countRes] = await Promise.all([
     supabase.rpc('search_communes', rpcParams),
@@ -406,6 +408,7 @@ export const searchCommunesForMap = async (
   if (filters.geoTags?.length) rpcParams.target_geo_tags = filters.geoTags;
   if (filters.prixM2Max) rpcParams.target_prix_m2_max = filters.prixM2Max;
   if (filters.airQuality) rpcParams.target_air_quality = filters.airQuality;
+  if (filters.travelFilter?.insees) rpcParams.target_insee_list = filters.travelFilter.insees;
 
   const { data, error } = await supabase.rpc('search_communes', rpcParams);
 
