@@ -10,7 +10,7 @@ import {
   ShoppingBag, GraduationCap, Heart, Train, Dumbbell,
   Users, AlertTriangle, ChevronDown, Check,
   Waves, Mountain, TreePine, Euro, Wind,
-  Navigation, Bike, Car, Clock, Loader2,
+  Navigation, Bike, Car, Clock, Loader2, TrainFront, Info,
 } from 'lucide-react';
 
 interface Props {
@@ -41,7 +41,7 @@ const GEO_TAG_ICONS: Record<GeoTag, React.ReactNode> = {
   campagne: <TreePine className="w-3.5 h-3.5" />,
 };
 
-const TRANSPORT_ICONS: Record<string, React.FC<{ className?: string }>> = { Bike, Car };
+const TRANSPORT_ICONS: Record<string, React.FC<{ className?: string }>> = { TrainFront, Bike, Car };
 
 const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose, resultCount }) => {
   const [departments, setDepartments] = useState<string[]>([]);
@@ -112,7 +112,7 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
     if (travelFilter?.mode && travelFilter?.duration) {
       update({ travelFilter: { ...base, mode: travelFilter.mode, duration: travelFilter.duration } });
     } else {
-      update({ travelFilter: { ...base, mode: travelFilter?.mode ?? 'cycling', duration: travelFilter?.duration ?? 30 } });
+      update({ travelFilter: { ...base, mode: travelFilter?.mode ?? 'train', duration: travelFilter?.duration ?? 30 } });
     }
   };
 
@@ -234,9 +234,11 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
                             key={key}
                             active={travelFilter.mode === key}
                             onClick={() => handleTransportMode(key)}
-                            activeClass={key === 'cycling'
-                              ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                              : 'bg-slate-100 border-slate-300 text-slate-600'}
+                            activeClass={key === 'train'
+                              ? 'bg-sky-50 border-sky-300 text-sky-700'
+                              : key === 'cycling'
+                                ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                                : 'bg-slate-100 border-slate-300 text-slate-600'}
                           >
                             {Icon && <Icon className="w-3.5 h-3.5" />}
                             {label}
@@ -262,6 +264,13 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
                       ))}
                     </div>
                   </div>
+
+                  {travelFilter.mode === 'train' && (
+                    <div className="flex items-start gap-2 text-[11px] text-sky-600 bg-sky-50 border border-sky-200 rounded-lg px-3 py-2">
+                      <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                      <span>Estimation basée sur la distance à vol d'oiseau (vitesse moyenne TER ~60 km/h). Les résultats seront affinés avec les horaires SNCF prochainement.</span>
+                    </div>
+                  )}
 
                   {isochroneLoading && (
                     <div className="flex items-center gap-2 text-xs text-slate-400 py-1">

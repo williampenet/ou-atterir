@@ -88,6 +88,7 @@ export const AIR_QUALITY_LEVELS: Record<AirQuality, { label: string; description
 };
 
 export const TRANSPORT_MODES: { key: TransportMode; label: string; icon: string }[] = [
+  { key: 'train', label: 'Train / TER', icon: 'TrainFront' },
   { key: 'cycling', label: 'Vélo', icon: 'Bike' },
   { key: 'driving', label: 'Voiture', icon: 'Car' },
 ];

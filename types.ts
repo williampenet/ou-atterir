@@ -104,7 +104,7 @@ export interface DvfData {
   transactionsDerniereAnnee: number;
 }
 
-export type TransportMode = 'cycling' | 'driving';
+export type TransportMode = 'train' | 'cycling' | 'driving';
 
 export interface TravelFilter {
   address: string;

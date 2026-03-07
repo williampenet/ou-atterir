@@ -3,10 +3,12 @@ import { TransportMode } from '../types';
 
 const ORS_BASE = 'https://api.openrouteservice.org/v2/isochrones';
 
-const ORS_PROFILES: Record<TransportMode, string> = {
+const ORS_PROFILES: Record<string, string> = {
   cycling: 'cycling-regular',
   driving: 'driving-car',
 };
+
+const TRAIN_AVG_SPEED_KMH = 60;
 
 interface CommunePoint {
   insee: string;
@@ -39,6 +41,15 @@ async function getAllCommunePoints(): Promise<CommunePoint[]> {
   return communePointsCache;
 }
 
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 function pointInPolygon(lng: number, lat: number, ring: number[][]): boolean {
   let inside = false;
   for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
@@ -57,6 +68,10 @@ export async function computeIsochroneInsees(
   mode: TransportMode,
   durationMinutes: number,
 ): Promise<string[]> {
+  if (mode === 'train') {
+    return computeTrainRadius(lat, lng, durationMinutes);
+  }
+
   const apiKey = import.meta.env.VITE_ORS_API_KEY;
   if (!apiKey) {
     console.error('Missing VITE_ORS_API_KEY');
@@ -99,5 +114,18 @@ export async function computeIsochroneInsees(
 
   return points
     .filter(p => pointInPolygon(p.lng, p.lat, outerRing))
+    .map(p => p.insee);
+}
+
+async function computeTrainRadius(
+  lat: number,
+  lng: number,
+  durationMinutes: number,
+): Promise<string[]> {
+  const radiusKm = (TRAIN_AVG_SPEED_KMH * durationMinutes) / 60;
+  const points = await getAllCommunePoints();
+
+  return points
+    .filter(p => haversineKm(lat, lng, p.lat, p.lng) <= radiusKm)
     .map(p => p.insee);
 }
