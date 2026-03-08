@@ -16,6 +16,7 @@ const App: React.FC = () => {
   const [activePage, setActivePage] = useState<AppPage>('explorer');
   const [filters, setFilters] = useState<SearchFilters>({});
   const [allResults, setAllResults] = useState<IdealResult[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [selectedCommune, setSelectedCommune] = useState<Commune | null>(null);
@@ -39,14 +40,16 @@ const App: React.FC = () => {
     const id = ++searchIdRef.current;
     setLoading(true);
 
-    searchCommunesInBounds(filters, null).then(results => {
+    searchCommunesInBounds(filters, null).then(({ results, total }) => {
       if (id !== searchIdRef.current) return;
       setAllResults(results);
+      setTotalCount(total);
       setLoading(false);
       setFitBoundsKey(k => k + 1);
     }).catch(() => {
       if (id !== searchIdRef.current) return;
       setAllResults([]);
+      setTotalCount(0);
       setLoading(false);
     });
   }, [filtersKey]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -61,13 +64,15 @@ const App: React.FC = () => {
     const id = ++searchIdRef.current;
     setLoading(true);
 
-    searchCommunesInBounds(filtersRef.current, bounds).then(results => {
+    searchCommunesInBounds(filtersRef.current, bounds).then(({ results, total }) => {
       if (id !== searchIdRef.current) return;
       setAllResults(results);
+      setTotalCount(total);
       setLoading(false);
     }).catch(() => {
       if (id !== searchIdRef.current) return;
       setAllResults([]);
+      setTotalCount(0);
       setLoading(false);
     });
   }, []);
@@ -76,11 +81,11 @@ const App: React.FC = () => {
 
   const paginatedResults: PaginatedResults<IdealResult> = useMemo(() => ({
     data: allResults.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    total: allResults.length,
+    total: totalCount,
     page,
     pageSize: PAGE_SIZE,
     hasMore: page * PAGE_SIZE < allResults.length,
-  }), [allResults, page]);
+  }), [allResults, page, totalCount]);
 
   const handlePageChange = (p: number) => setPage(p);
 
@@ -206,7 +211,12 @@ const App: React.FC = () => {
                   Recherche...
                 </span>
               ) : (
-                <>{allResults.length} commune{allResults.length !== 1 ? 's' : ''} dans la zone de la carte</>
+                <>
+                {totalCount > allResults.length
+                  ? `${allResults.length} communes affichées sur ${totalCount.toLocaleString('fr-FR')}`
+                  : `${totalCount.toLocaleString('fr-FR')} commune${totalCount !== 1 ? 's' : ''}`
+                } dans la zone
+              </>
               )}
             </p>
             <button
@@ -270,7 +280,7 @@ const App: React.FC = () => {
               isVisible={activePage === 'explorer'}
             />
 
-            <BottomSheet communeCount={allResults.length}>
+            <BottomSheet communeCount={totalCount}>
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-16">
                   <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
@@ -348,7 +358,7 @@ const App: React.FC = () => {
         onFiltersChange={setFilters}
         open={filtersOpen}
         onClose={() => setFiltersOpen(false)}
-        resultCount={allResults.length}
+        resultCount={totalCount}
       />
 
       {selectedCommune && (

@@ -416,17 +416,34 @@ function buildRpcParams(filters: SearchFilters, limit: number, bounds?: MapBound
   return rpcParams;
 }
 
+export interface BoundsSearchResult {
+  results: IdealResult[];
+  total: number;
+}
+
 export const searchCommunesInBounds = async (
   filters: SearchFilters,
   bounds: MapBounds | null,
   limit = 500
-): Promise<IdealResult[]> => {
+): Promise<BoundsSearchResult> => {
   const rpcParams = buildRpcParams(filters, limit, bounds);
-  const { data, error } = await supabase.rpc('search_communes', rpcParams);
+  const countRpcParams = { ...buildRpcParams(filters, 0, bounds) };
+  delete countRpcParams.page_limit;
+  delete countRpcParams.page_offset;
 
-  if (error || !data) return [];
+  const [resultsRes, countRes] = await Promise.all([
+    supabase.rpc('search_communes', rpcParams),
+    supabase.rpc('count_communes', countRpcParams),
+  ]);
 
-  return ((data || []) as RpcResultRow[]).map(rpcRowToResult);
+  const total = (countRes.data as number) || 0;
+
+  if (resultsRes.error || !resultsRes.data) return { results: [], total };
+
+  return {
+    results: ((resultsRes.data || []) as RpcResultRow[]).map(rpcRowToResult),
+    total,
+  };
 };
 
 export function resultToMapMarker(r: IdealResult): MapMarker {
