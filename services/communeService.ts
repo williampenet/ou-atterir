@@ -386,20 +386,18 @@ export const getCommuneAirQuality = async (insee: string): Promise<AirQualityDat
 };
 
 // --------------------------------------------------
-// API: Lightweight map markers (bbox-filtered)
+// API: Unified search with bounds (for map + list sync)
+// Returns all matching results within bounds, client-side
+// filtered. Once the SQL migration is deployed, bounds
+// filtering will happen server-side via RPC params.
 // --------------------------------------------------
 
-export const searchCommunesForMap = async (
-  filters: SearchFilters,
-  bounds: MapBounds | null,
-  limit = 300
-): Promise<MapMarker[]> => {
+function buildRpcParams(filters: SearchFilters, limit: number): Record<string, unknown> {
   const rpcParams: Record<string, unknown> = {
     page_limit: limit,
     page_offset: 0,
     target_risk_level: filters.riskLevel ?? null,
   };
-
   if (filters.department) rpcParams.target_department = filters.department;
   if (filters.bloc) rpcParams.target_bloc = filters.bloc;
   if (filters.matchLevel) rpcParams.target_match_level = filters.matchLevel;
@@ -409,7 +407,54 @@ export const searchCommunesForMap = async (
   if (filters.prixM2Max) rpcParams.target_prix_m2_max = filters.prixM2Max;
   if (filters.airQuality) rpcParams.target_air_quality = filters.airQuality;
   if (filters.travelFilter?.insees) rpcParams.target_insee_list = filters.travelFilter.insees;
+  return rpcParams;
+}
 
+export const searchCommunesInBounds = async (
+  filters: SearchFilters,
+  bounds: MapBounds | null,
+  limit = 500
+): Promise<IdealResult[]> => {
+  const rpcParams = buildRpcParams(filters, limit);
+  const { data, error } = await supabase.rpc('search_communes', rpcParams);
+
+  if (error || !data) return [];
+
+  let rows = (data || []) as RpcResultRow[];
+
+  if (bounds) {
+    rows = rows.filter(r =>
+      r.lat >= bounds.latMin && r.lat <= bounds.latMax &&
+      r.lng >= bounds.lngMin && r.lng <= bounds.lngMax
+    );
+  }
+
+  return rows.map(rpcRowToResult);
+};
+
+export function resultToMapMarker(r: IdealResult): MapMarker {
+  return {
+    insee: r.commune.insee,
+    name: r.commune.name,
+    zipcode: r.commune.zipcode,
+    lat: r.commune.coordinates[0],
+    lng: r.commune.coordinates[1],
+    latestBloc: r.latestBloc ?? null,
+    matchLevel: r.matchLevel,
+  };
+}
+
+// --------------------------------------------------
+// API: Lightweight map markers (bbox-filtered) — kept
+// for backward compatibility
+// --------------------------------------------------
+
+export const searchCommunesForMap = async (
+  filters: SearchFilters,
+  bounds: MapBounds | null,
+  limit = 300
+): Promise<MapMarker[]> => {
+  const rpcParams = buildRpcParams(filters, limit);
   const { data, error } = await supabase.rpc('search_communes', rpcParams);
 
   if (error || !data) return [];
