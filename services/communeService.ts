@@ -392,7 +392,7 @@ export const getCommuneAirQuality = async (insee: string): Promise<AirQualityDat
 // filtering will happen server-side via RPC params.
 // --------------------------------------------------
 
-function buildRpcParams(filters: SearchFilters, limit: number): Record<string, unknown> {
+function buildRpcParams(filters: SearchFilters, limit: number, bounds?: MapBounds | null): Record<string, unknown> {
   const rpcParams: Record<string, unknown> = {
     page_limit: limit,
     page_offset: 0,
@@ -407,6 +407,12 @@ function buildRpcParams(filters: SearchFilters, limit: number): Record<string, u
   if (filters.prixM2Max) rpcParams.target_prix_m2_max = filters.prixM2Max;
   if (filters.airQuality) rpcParams.target_air_quality = filters.airQuality;
   if (filters.travelFilter?.insees) rpcParams.target_insee_list = filters.travelFilter.insees;
+  if (bounds) {
+    rpcParams.target_lat_min = bounds.latMin;
+    rpcParams.target_lat_max = bounds.latMax;
+    rpcParams.target_lng_min = bounds.lngMin;
+    rpcParams.target_lng_max = bounds.lngMax;
+  }
   return rpcParams;
 }
 
@@ -415,21 +421,12 @@ export const searchCommunesInBounds = async (
   bounds: MapBounds | null,
   limit = 500
 ): Promise<IdealResult[]> => {
-  const rpcParams = buildRpcParams(filters, limit);
+  const rpcParams = buildRpcParams(filters, limit, bounds);
   const { data, error } = await supabase.rpc('search_communes', rpcParams);
 
   if (error || !data) return [];
 
-  let rows = (data || []) as RpcResultRow[];
-
-  if (bounds) {
-    rows = rows.filter(r =>
-      r.lat >= bounds.latMin && r.lat <= bounds.latMax &&
-      r.lng >= bounds.lngMin && r.lng <= bounds.lngMax
-    );
-  }
-
-  return rows.map(rpcRowToResult);
+  return ((data || []) as RpcResultRow[]).map(rpcRowToResult);
 };
 
 export function resultToMapMarker(r: IdealResult): MapMarker {
