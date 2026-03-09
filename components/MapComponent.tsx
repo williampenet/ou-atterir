@@ -9,6 +9,10 @@ import 'leaflet/dist/leaflet.css';
 
 const FRANCE_CENTER: L.LatLngExpression = [46.5, 2.5];
 const FRANCE_ZOOM = 6;
+const FRANCE_BOUNDS: L.LatLngBoundsExpression = [
+  [41.2, -5.5],  // Sud-Ouest (inclut la Corse au sud ~41.4)
+  [51.2, 9.8],   // Nord-Est
+];
 
 function getBoundsFromMap(map: L.Map): MapBounds {
   const b = map.getBounds();
@@ -60,12 +64,15 @@ const MapComponent: React.FC<Props> = ({
         center={FRANCE_CENTER}
         zoom={FRANCE_ZOOM}
         scrollWheelZoom
+        maxBounds={FRANCE_BOUNDS}
+        maxBoundsViscosity={1.0}
+        minZoom={5}
         className="h-full w-full z-0"
         ref={mapRef}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url={`https://api.maptiler.com/maps/landscape-v4/{z}/{x}/{y}.png?key=${import.meta.env.VITE_MAPTILER_KEY}`}
         />
         <MapInner
           markers={markers}
