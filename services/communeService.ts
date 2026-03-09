@@ -352,12 +352,17 @@ export const getEquipmentSummary = async (insee: string): Promise<EquipmentSumma
 const EXCLUDED_LABELS = new Set([
   'Formation santé', 'Taxi-VTC', 'GRETA',
   'Autre formation continue', 'Autre formation post-bac',
+  'Salles spécialisées', 'Salles non spécialisées',
 ]);
 
 const LABEL_RENAMES: Record<string, string> = {
   "Gare d'intérêt national": 'Gare nationale',
   "Gare d'intérêt régional": 'Gare régionale',
   "Gare d'intérêt local": 'Gare locale',
+  'Bassin de natation': 'Piscine',
+  'Salles de remise en forme': 'Salle de fitness',
+  'Athlétisme': "Terrain d'athlétisme",
+  'Exposition et médiation culturelle': "Salle d'exposition",
 };
 
 const GROUP_RULES: { match: string[]; groupLabel: string }[] = [
