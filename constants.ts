@@ -23,6 +23,7 @@ export const EQUIPMENT_CATEGORIES: EquipmentCategory[] = [
   {
     id: 'C', label: 'Enseignement', icon: 'GraduationCap',
     children: [
+      { id: 'creche', label: 'Crèche' },
       { id: 'ecole', label: 'École (maternelle, primaire, élémentaire)' },
       { id: 'college', label: 'Collège' },
       { id: 'lycee', label: 'Lycée' },
@@ -34,7 +35,6 @@ export const EQUIPMENT_CATEGORIES: EquipmentCategory[] = [
     children: [
       { id: 'etab_sante', label: 'Établissements de santé' },
       { id: 'prof_med', label: 'Professions médicales libérales' },
-      { id: 'creche', label: 'Crèche' },
     ],
   },
   { id: 'E', label: 'Transports', icon: 'Train', filterKey: 'transports' },
