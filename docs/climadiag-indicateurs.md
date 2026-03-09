@@ -17,6 +17,12 @@ Horizons TRACC (réchauffement France hexagonale) :
 
 Période de référence : **1976-2005**. Chaque projection contient `ref`, `min`, `mean`, `max`.
 
+> **Important (à mentionner dans À propos)** : la valeur "Réf" n'est pas la valeur actuelle,
+> c'est la moyenne historique 1976-2005 (~35 ans en arrière). Il n'y a pas de mesure "aujourd'hui"
+> dans Climadiag. La projection 2030 (dans 4 ans) est paradoxalement plus représentative
+> du climat actuel que la Réf. Les projections (2030/2050/2100) sont la médiane de 17 modèles
+> climatiques, pas des certitudes.
+
 ## Indicateurs retenus (phase 1)
 
 | Code | Nom | Définition | Granularité |
@@ -32,26 +38,22 @@ Période de référence : **1976-2005**. Chaque projection contient `ref`, `min`
 - **S3** = chaleur persistante (le corps ne récupère plus la nuit, risque sanitaire)
 → On peut avoir 10 jours très chauds sans vague de chaleur, et vice versa.
 
-## Les 20 indicateurs complets (référence)
+## Indicateurs retenus
 
-### Climat (G1-G4)
+### Climat
 | Code | Indicateur | Définition | Type |
 |------|-----------|-----------|------|
-| G1 | Température moyenne | Moyenne des T° moyennes quotidiennes | Saisonnier |
-| G2 | Jours de gel | T° minimale < 0 °C | Annuel |
-| G3 | Cumul de précipitations | Somme des précipitations (mm) | Saisonnier |
 | G4 | Jours avec précipitations | Cumul > 1 mm | Saisonnier |
 
-### Risques naturels (R1-R5)
+### Risques naturels
 | Code | Indicateur | Définition | Type |
 |------|-----------|-----------|------|
-| R1 | Fortes pluies | Précipitations parmi les 1 % les plus intenses | Saisonnier |
 | R2 | Précipitations extrêmes | Quantile 99,9 % (~1 fois / 3 ans) | Annuel |
 | R3 | Niveau de la mer | Montée du niveau marin (null si pas littoral) | Annuel |
 | R4 | Risque feu de végétation | Jours où IFM > 40 | Annuel |
 | R5 | Sol sec | Réserve eau du sol < 40 % (SWI < 0.4) | Saisonnier |
 
-### Santé (S1-S4)
+### Santé
 | Code | Indicateur | Définition | Type |
 |------|-----------|-----------|------|
 | S1 | Jours très chauds | T° max ≥ 35 °C | Annuel |
@@ -59,22 +61,10 @@ Période de référence : **1976-2005**. Chaque projection contient `ref`, `min`
 | S3 | Vague de chaleur | Épisode prolongé chaleur jour+nuit | Annuel |
 | S4 | Vague de froid | Épisode prolongé de froid | Annuel |
 
-### Agriculture (AG1-AG4)
-| Code | Indicateur | Définition | Type |
-|------|-----------|-----------|------|
-| AG1 | Stress hydrique cultures | Sol très sec SWI < 0.2 | Saisonnier |
-| AG2 | Jours favorables cultures | Conditions thermiques + hydriques OK | Annuel |
-| AG3 | Degrés-jours croissance | Cumul thermique pour la végétation | Annuel |
-| AG4 | Gel tardif | Gel après le 1er mars | Annuel |
-
-### Tourisme (T1-T3)
-| Code | Indicateur | Définition | Type |
-|------|-----------|-----------|------|
-| T1 | Jours favorables tourisme | Conditions météo agréables | Annuel |
-| T2 | Indice touristique estival | Score composite été (souvent null) | Annuel |
-| T3 | Indice touristique hivernal | Score hiver / enneigement (souvent null) | Annuel |
-
-Les catégories ne sont pas des scores mais des **angles de lecture** du même réchauffement.
+### Exclus
+- **Tourisme** (T1-T3) : supprimés.
+- **Agriculture** (AG1-AG4) : masqués pour l'instant, à traiter plus tard.
+- **G1** (T° moyenne), **G2** (gel), **G3** (précipitations), **R1** (fortes pluies) : supprimés.
 
 ## Plan d'intégration
 
