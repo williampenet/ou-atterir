@@ -81,11 +81,11 @@ const ResultCard: React.FC<{ result: IdealResult; onClick: () => void }> = ({ re
       className="w-full text-left bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all group"
     >
       <div>
-        <div className="flex items-center text-slate-400 text-xs mb-0.5">
+        <h3 className="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors mb-0.5">{commune.name}</h3>
+        <div className="flex items-center text-slate-400 text-xs">
           <MapPin className="w-3 h-3 mr-1" />
           {commune.zipcode}
         </div>
-        <h3 className="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">{commune.name}</h3>
       </div>
       {displayNuance && displayWinner && displayYear && displayScore && (
         <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">

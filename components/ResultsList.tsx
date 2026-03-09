@@ -102,11 +102,11 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, isSelected, onClick, in
     >
       <div className="flex justify-between items-start">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center text-slate-400 text-xs mb-0.5">
+          <h3 className="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors mb-0.5">{commune.name}</h3>
+          <div className="flex items-center text-slate-400 text-xs">
             <MapPin className="w-3 h-3 mr-1" />
             {commune.zipcode} — {commune.department}
           </div>
-          <h3 className="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">{commune.name} <span className="font-medium text-slate-400">({commune.zipcode})</span></h3>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <div
