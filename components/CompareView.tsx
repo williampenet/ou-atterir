@@ -300,13 +300,21 @@ const DvfSection: React.FC<{ a: CommuneFullData; b: CommuneFullData; activeTab: 
 };
 
 /* ─── Equipments ─── */
+const STOP_WORDS = new Set(['de', 'du', 'des', "d'", 'en', 'à', 'au', 'aux', 'et', 'pour', 'par', 'sans', 'sur', 'et/ou']);
+
+const addPlural = (word: string): string => {
+  const last = word[word.length - 1];
+  if (last === 's' || last === 'x' || last === 'z') return word;
+  return word + 's';
+};
+
 const pluralizeLabel = (label: string, count: number): string => {
   if (count <= 1) return label;
   const words = label.split(' ');
-  const first = words[0];
-  const lastChar = first[first.length - 1];
-  if (lastChar !== 's' && lastChar !== 'x' && lastChar !== 'z') {
-    words[0] = first + 's';
+  words[0] = addPlural(words[0]);
+  for (let i = 1; i < words.length; i++) {
+    if (STOP_WORDS.has(words[i].toLowerCase())) break;
+    words[i] = addPlural(words[i]);
   }
   return words.join(' ');
 };
