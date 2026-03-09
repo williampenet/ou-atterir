@@ -1,7 +1,7 @@
 import React from 'react';
 import { IdealResult, PaginatedResults } from '../types';
 import { NUANCE_COLORS } from '../constants';
-import { MapPin, Shield, Activity, Compass, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MapPin, Compass, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Props {
   results: PaginatedResults<IdealResult>;
@@ -19,8 +19,6 @@ const IdealResultsList: React.FC<Props> = ({ results, onSelectCommune, onPageCha
     );
   }
 
-  const forteresses = results.data.filter(r => r.matchLevel === 'forteresse');
-  const tendances = results.data.filter(r => r.matchLevel === 'tendance');
   const totalPages = Math.ceil(results.total / results.pageSize);
 
   return (
@@ -30,23 +28,9 @@ const IdealResultsList: React.FC<Props> = ({ results, onSelectCommune, onPageCha
         {totalPages > 1 && <span> — page {results.page}/{totalPages}</span>}
       </p>
 
-      {forteresses.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 uppercase tracking-wider">
-            <Shield className="w-3.5 h-3.5" /> Forteresses
-          </div>
-          {forteresses.map(r => <ResultCard key={r.commune.insee} result={r} onClick={() => onSelectCommune(r.commune)} />)}
-        </div>
-      )}
-
-      {tendances.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700 uppercase tracking-wider">
-            <Activity className="w-3.5 h-3.5" /> En ballottage
-          </div>
-          {tendances.map(r => <ResultCard key={r.commune.insee} result={r} onClick={() => onSelectCommune(r.commune)} />)}
-        </div>
-      )}
+      <div className="space-y-2">
+        {results.data.map(r => <ResultCard key={r.commune.insee} result={r} onClick={() => onSelectCommune(r.commune)} />)}
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -75,7 +59,7 @@ const IdealResultsList: React.FC<Props> = ({ results, onSelectCommune, onPageCha
 };
 
 const ResultCard: React.FC<{ result: IdealResult; onClick: () => void }> = ({ result, onClick }) => {
-  const { commune, matchLevel, latestNuance, latestWinner, latestYear, latestScore } = result;
+  const { commune, latestNuance, latestWinner, latestYear, latestScore } = result;
 
   // Use RPC-provided latest data, or fall back to history
   const displayNuance = latestNuance ?? (commune.history.length > 0
@@ -96,21 +80,12 @@ const ResultCard: React.FC<{ result: IdealResult; onClick: () => void }> = ({ re
       onClick={onClick}
       className="w-full text-left bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all group"
     >
-      <div className="flex justify-between items-start">
-        <div>
-          <div className="flex items-center text-slate-400 text-xs mb-0.5">
-            <MapPin className="w-3 h-3 mr-1" />
-            {commune.zipcode}
-          </div>
-          <h3 className="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">{commune.name}</h3>
+      <div>
+        <div className="flex items-center text-slate-400 text-xs mb-0.5">
+          <MapPin className="w-3 h-3 mr-1" />
+          {commune.zipcode}
         </div>
-        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-          matchLevel === 'forteresse'
-            ? 'bg-emerald-100 text-emerald-700'
-            : 'bg-amber-100 text-amber-700'
-        }`}>
-          {matchLevel === 'forteresse' ? 'Forteresse' : 'En ballottage'}
-        </span>
+        <h3 className="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">{commune.name}</h3>
       </div>
       {displayNuance && displayWinner && displayYear && displayScore && (
         <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">

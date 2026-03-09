@@ -1,7 +1,7 @@
 import React from 'react';
 import { Commune, IdealResult, PaginatedResults } from '../types';
 import { BLOC_COLORS } from '../constants';
-import { MapPin, Shield, Activity, Search, ChevronLeft, ChevronRight, Scale } from 'lucide-react';
+import { MapPin, Search, ChevronLeft, ChevronRight, Scale } from 'lucide-react';
 
 interface Props {
   results: PaginatedResults<IdealResult>;
@@ -109,14 +109,6 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, isSelected, onClick, in
           <h3 className="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">{commune.name} <span className="font-medium text-slate-400">({commune.zipcode})</span></h3>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 ${
-            matchLevel === 'forteresse'
-              ? 'bg-emerald-100 text-emerald-700'
-              : 'bg-amber-100 text-amber-700'
-          }`}>
-            {matchLevel === 'forteresse' ? <Shield className="w-2.5 h-2.5" /> : <Activity className="w-2.5 h-2.5" />}
-            {matchLevel === 'forteresse' ? 'Forteresse' : 'En ballottage'}
-          </span>
           <div
             role="checkbox"
             aria-checked={inCompare}
