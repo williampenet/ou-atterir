@@ -3,6 +3,7 @@ import { Commune, ElectionType, EquipmentSummary, EquipmentDomain, RiskDetail, R
 import { getCommuneByInsee, getEquipmentSummary, getCommuneRisks, getDvfStats, getCommuneAirQuality, AirQualityData } from '../services/communeService';
 import { BLOC_COLORS, EQUIPMENT_DOMAINS, RISK_LEVELS, AIR_QUALITY_LEVELS } from '../constants';
 import CommuneCard from './CommuneCard';
+import StabilityBadge from './StabilityBadge';
 import DvfChart from './DvfChart';
 import {
   X, ShoppingBag, GraduationCap, Heart, Train, Dumbbell,
@@ -211,6 +212,11 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
 
               {/* 3. Politique */}
               <CategoryBlock title="Politique" icon={Scale}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Stabilité politique</span>
+                  <StabilityBadge level={displayCommune.stability} compact />
+                </div>
+
                 {groupedByType.length > 0 ? (
                   <div className="space-y-5">
                     {groupedByType.map(({ type, label, elections }) => (
