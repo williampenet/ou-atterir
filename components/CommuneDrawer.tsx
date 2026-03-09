@@ -47,7 +47,12 @@ const CategoryBlock: React.FC<{
 );
 
 const DETAIL_THRESHOLD = 10;
-const ALWAYS_DETAIL_DOMAINS: EquipmentDomain[] = ['C'];
+const ALWAYS_DETAIL_DOMAINS: EquipmentDomain[] = ['C', 'F'];
+
+const COLLAPSED_LABELS: Partial<Record<EquipmentDomain, string>> = {
+  D: 'établissements ou services',
+  F: 'équipements',
+};
 
 const EquipmentDetailsList: React.FC<{ details: EquipmentDetail[] }> = ({ details }) => {
   const domains = (['B', 'C', 'D', 'E', 'F'] as EquipmentDomain[]).filter(d =>
@@ -80,7 +85,7 @@ const EquipmentDetailsList: React.FC<{ details: EquipmentDetail[] }> = ({ detail
               </div>
             ) : (
               <p className="text-xs text-slate-500 pl-5.5">
-                <span className="font-semibold text-slate-800">{totalCount}</span> {domainLabel.toLowerCase()}
+                <span className="font-semibold text-slate-800">{totalCount}</span> {COLLAPSED_LABELS[domain] ?? domainLabel.toLowerCase()}
               </p>
             )}
           </div>

@@ -301,7 +301,12 @@ const DvfSection: React.FC<{ a: CommuneFullData; b: CommuneFullData; activeTab: 
 
 /* ─── Equipments ─── */
 const DETAIL_THRESHOLD = 10;
-const ALWAYS_DETAIL_DOMAINS: EquipmentDomain[] = ['C'];
+const ALWAYS_DETAIL_DOMAINS: EquipmentDomain[] = ['C', 'F'];
+
+const COLLAPSED_LABELS: Partial<Record<EquipmentDomain, string>> = {
+  D: 'établissements ou services',
+  F: 'équipements',
+};
 
 const renderDomainDetails = (items: EquipmentDetail[], domain: EquipmentDomain) => {
   const domainLabel = EQUIPMENT_DOMAINS[domain]?.label ?? items[0]?.domainLabel ?? domain;
@@ -311,7 +316,7 @@ const renderDomainDetails = (items: EquipmentDetail[], domain: EquipmentDomain) 
   if (!showDetail) {
     return (
       <p className="text-xs text-slate-500">
-        <span className="font-semibold text-slate-800">{totalCount}</span> {domainLabel.toLowerCase()}
+        <span className="font-semibold text-slate-800">{totalCount}</span> {COLLAPSED_LABELS[domain] ?? domainLabel.toLowerCase()}
       </p>
     );
   }

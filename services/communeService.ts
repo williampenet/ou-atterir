@@ -349,6 +349,66 @@ export const getEquipmentSummary = async (insee: string): Promise<EquipmentSumma
 // API: Equipment details for a commune
 // --------------------------------------------------
 
+const EXCLUDED_LABELS = new Set([
+  'Formation santé', 'Taxi-VTC', 'GRETA',
+  'Autre formation continue', 'Autre formation post-bac',
+]);
+
+const LABEL_RENAMES: Record<string, string> = {
+  "Gare d'intérêt national": 'Gare nationale',
+  "Gare d'intérêt régional": 'Gare régionale',
+  "Gare d'intérêt local": 'Gare locale',
+};
+
+const GROUP_RULES: { match: string[]; groupLabel: string }[] = [
+  {
+    match: ['Lycée général et/ou technologique', 'Lycée professionnel', 'Lycée agricole',
+            'Section enseignement général et technologique', 'Section enseignement professionnel'],
+    groupLabel: 'Lycées',
+  },
+  {
+    match: ['UFR', 'Institut universitaire', "École d'ingénieurs", 'Enseignement supérieur privé',
+            'École supérieure agricole', 'Autre enseignement supérieur',
+            'STS / CPGE', 'Formation commerce', 'CFA hors agriculture', 'Apprentissage agricole'],
+    groupLabel: 'Enseignement supérieur',
+  },
+];
+
+function transformEquipmentDetails(raw: EquipmentDetail[]): EquipmentDetail[] {
+  const filtered = raw.filter(r => !EXCLUDED_LABELS.has(r.label));
+
+  const groupMatchSet = new Map<string, string>();
+  for (const rule of GROUP_RULES) {
+    for (const m of rule.match) {
+      groupMatchSet.set(m, rule.groupLabel);
+    }
+  }
+
+  const merged = new Map<string, EquipmentDetail>();
+  for (const item of filtered) {
+    let label = item.label.replace(/\s*\(ancien code\)\s*/gi, '');
+    label = LABEL_RENAMES[label] ?? label;
+
+    const groupLabel = groupMatchSet.get(label);
+    if (groupLabel) label = groupLabel;
+
+    const key = `${item.domain}::${label}`;
+    const existing = merged.get(key);
+    if (existing) {
+      existing.count += item.count;
+    } else {
+      merged.set(key, { ...item, label, count: item.count });
+    }
+  }
+
+  const result = Array.from(merged.values());
+  result.sort((a, b) => {
+    if (a.domain !== b.domain) return a.domain.localeCompare(b.domain);
+    return b.count - a.count || a.label.localeCompare(b.label);
+  });
+  return result;
+}
+
 export const getEquipmentDetails = async (insee: string): Promise<EquipmentDetail[]> => {
   const { data, error } = await supabase.rpc('get_commune_equipment_details', {
     target_insee: insee,
@@ -356,12 +416,14 @@ export const getEquipmentDetails = async (insee: string): Promise<EquipmentDetai
 
   if (error || !data) return [];
 
-  return (data as { domain: string; domain_label: string; equipment_label: string; count: number }[]).map(row => ({
+  const raw = (data as { domain: string; domain_label: string; equipment_label: string; count: number }[]).map(row => ({
     domain: row.domain as EquipmentDomain,
     domainLabel: row.domain_label,
     label: row.equipment_label,
     count: row.count,
   }));
+
+  return transformEquipmentDetails(raw);
 };
 
 // --------------------------------------------------
