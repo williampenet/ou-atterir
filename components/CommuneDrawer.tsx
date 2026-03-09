@@ -289,9 +289,9 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
         onClick={onClose}
       />
 
-      <div className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[540px] lg:inset-0 bg-white shadow-2xl flex flex-col animate-slide-in-right">
+      <div className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[540px] md:inset-0 md:w-auto bg-white shadow-2xl flex flex-col animate-slide-in-right">
         {/* Header bar */}
-        <div className="flex items-center justify-between px-6 lg:px-10 py-4 border-b border-slate-100 flex-shrink-0">
+        <div className="flex items-center justify-between px-6 md:px-10 py-4 border-b border-slate-100 flex-shrink-0">
           <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Détail commune</h3>
           <button
             onClick={onClose}
@@ -302,7 +302,7 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-grow overflow-y-auto lg:overflow-hidden px-6 py-5 lg:px-10 lg:flex lg:flex-col">
+        <div className="flex-grow overflow-y-auto md:overflow-hidden px-6 py-5 md:px-10 md:flex md:flex-col">
 
           {/* Commune identity header */}
           <div className="pb-6 mb-6 border-b border-slate-200 flex-shrink-0">
@@ -310,14 +310,14 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
           </div>
 
           {loading ? (
-            <div className="flex flex-col items-center py-16 lg:flex-1">
+            <div className="flex flex-col items-center py-16 md:flex-1">
               <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
               <p className="text-slate-400 text-sm">Chargement des données...</p>
             </div>
           ) : (
-            <div className="lg:grid lg:grid-cols-3 lg:gap-8 lg:min-h-0 lg:flex-1 lg:overflow-hidden">
+            <div className="md:grid md:grid-cols-3 md:gap-8 md:min-h-0 md:flex-1 md:overflow-hidden">
               {/* Column 1: Climat */}
-              <div className="lg:overflow-y-auto lg:pr-4">
+              <div className="md:overflow-y-auto md:pr-4">
                 <CategoryBlock title="Environnement et risques" icon={Leaf}>
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -366,7 +366,7 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
               </div>
 
               {/* Column 2: Services + Immobilier */}
-              <div className="lg:overflow-y-auto lg:border-x lg:border-slate-100 lg:px-4">
+              <div className="md:overflow-y-auto md:border-x md:border-slate-100 md:px-4">
                 {eqDetails.length > 0 && (
                   <CategoryBlock title="Services et équipements" icon={Store}>
                     <EquipmentDetailsList details={eqDetails} />
@@ -383,7 +383,7 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
               </div>
 
               {/* Column 3: Politique */}
-              <div className="lg:overflow-y-auto lg:pl-4">
+              <div className="md:overflow-y-auto md:pl-4">
                 <CategoryBlock title="Politique" icon={Scale} isLast>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Stabilité politique</span>
