@@ -289,9 +289,9 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
         onClick={onClose}
       />
 
-      <div className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[540px] lg:w-[600px] bg-white shadow-2xl flex flex-col animate-slide-in-right">
+      <div className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[540px] lg:inset-0 bg-white shadow-2xl flex flex-col animate-slide-in-right">
         {/* Header bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
+        <div className="flex items-center justify-between px-6 lg:px-10 py-4 border-b border-slate-100 flex-shrink-0">
           <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Détail commune</h3>
           <button
             onClick={onClose}
@@ -302,125 +302,127 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-grow overflow-y-auto px-6 py-5">
+        <div className="flex-grow overflow-y-auto lg:overflow-hidden px-6 py-5 lg:px-10 lg:flex lg:flex-col">
 
           {/* Commune identity header */}
-          <div className="pb-6 mb-6 border-b border-slate-200">
+          <div className="pb-6 mb-6 border-b border-slate-200 flex-shrink-0">
             <CommuneCard commune={displayCommune} />
           </div>
 
           {loading ? (
-            <div className="flex flex-col items-center py-16">
+            <div className="flex flex-col items-center py-16 lg:flex-1">
               <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
               <p className="text-slate-400 text-sm">Chargement des données...</p>
             </div>
           ) : (
-            <>
-              {/* 1. Environnement et risques */}
-              <CategoryBlock title="Environnement et risques" icon={Leaf}>
-                {/* Risks */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Risques répertoriés</span>
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${riskConfig.color}`}>
-                      <AlertTriangle className="w-2.5 h-2.5" />
-                      {riskConfig.label}
-                    </span>
-                  </div>
-                  {risks.length === 0 ? (
-                    <p className="text-xs text-slate-400">Aucun risque répertorié pour cette commune.</p>
-                  ) : (
-                    <div className="flex flex-wrap gap-1.5">
-                      {risks.map(r => (
-                        <span
-                          key={r.numRisque}
-                          className="inline-flex items-center gap-1 px-2 py-1 bg-slate-50 rounded-lg border border-slate-100 text-xs text-slate-600"
-                        >
-                          <AlertTriangle className="w-3 h-3 text-amber-500 flex-shrink-0" />
-                          {r.libelleRisque}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Air quality */}
-                {airQuality && aqConfig && (
+            <div className="lg:grid lg:grid-cols-3 lg:gap-8 lg:min-h-0 lg:flex-1 lg:overflow-hidden">
+              {/* Column 1: Climat */}
+              <div className="lg:overflow-y-auto lg:pr-4">
+                <CategoryBlock title="Environnement et risques" icon={Leaf}>
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Qualité de l'air</span>
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${aqConfig.color}`}>
-                        <Wind className="w-2.5 h-2.5" />
-                        {aqConfig.label}
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Risques répertoriés</span>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${riskConfig.color}`}>
+                        <AlertTriangle className="w-2.5 h-2.5" />
+                        {riskConfig.label}
                       </span>
                     </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-extrabold text-slate-800">{airQuality.pm25Concentration.toFixed(1)}</span>
-                      <span className="text-xs text-slate-400">µg/m³ PM2.5 (moyenne annuelle)</span>
-                    </div>
-                    <p className="text-[11px] text-slate-400 mt-1">Source : Agence européenne pour l'environnement (2024)</p>
+                    {risks.length === 0 ? (
+                      <p className="text-xs text-slate-400">Aucun risque répertorié pour cette commune.</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {risks.map(r => (
+                          <span
+                            key={r.numRisque}
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-slate-50 rounded-lg border border-slate-100 text-xs text-slate-600"
+                          >
+                            <AlertTriangle className="w-3 h-3 text-amber-500 flex-shrink-0" />
+                            {r.libelleRisque}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </CategoryBlock>
 
-              {/* 2. Projections climatiques */}
-              {climatData && <ClimatSection data={climatData} />}
-
-              {/* 3. Services et équipements */}
-              {eqDetails.length > 0 && (
-                <CategoryBlock title="Services et équipements" icon={Store}>
-                  <EquipmentDetailsList details={eqDetails} />
+                  {airQuality && aqConfig && (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Qualité de l'air</span>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${aqConfig.color}`}>
+                          <Wind className="w-2.5 h-2.5" />
+                          {aqConfig.label}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-extrabold text-slate-800">{airQuality.pm25Concentration.toFixed(1)}</span>
+                        <span className="text-xs text-slate-400">µg/m³ PM2.5 (moyenne annuelle)</span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-1">Source : Agence européenne pour l'environnement (2024)</p>
+                    </div>
+                  )}
                 </CategoryBlock>
-              )}
 
-              {/* 4. Politique */}
-              <CategoryBlock title="Politique" icon={Scale}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Stabilité politique</span>
-                  <StabilityBadge level={displayCommune.stability} compact />
-                </div>
+                {climatData && <ClimatSection data={climatData} />}
+              </div>
 
-                {groupedByType.length > 0 ? (
-                  <div className="space-y-5">
-                    {groupedByType.map(({ type, label, elections }) => (
-                      <div key={type}>
-                        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{label}</h4>
-                        <div className="space-y-2">
-                          {elections.map((election) => (
-                            <div key={`${type}-${election.year}`} className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100">
-                              <div className="flex items-center">
-                                <span className="text-sm font-bold text-slate-700 w-12">{election.year}</span>
-                                <div className="h-3 w-3 rounded-full mr-3 flex-shrink-0" style={{ backgroundColor: getBlocColor(election.winnerBloc) }} />
-                                <div className="flex flex-col">
-                                  <span className="text-sm font-medium text-slate-800">
-                                    {election.winnerName} <span className="text-slate-400 font-normal">({election.winnerNuanceLabel})</span>
-                                  </span>
+              {/* Column 2: Services + Immobilier */}
+              <div className="lg:overflow-y-auto lg:border-x lg:border-slate-100 lg:px-4">
+                {eqDetails.length > 0 && (
+                  <CategoryBlock title="Services et équipements" icon={Store}>
+                    <EquipmentDetailsList details={eqDetails} />
+                  </CategoryBlock>
+                )}
+
+                <CategoryBlock title="Immobilier" icon={Euro} isLast>
+                  {dvfData ? (
+                    <DvfChart dvfData={dvfData} inline />
+                  ) : (
+                    <p className="text-xs text-slate-400">Données immobilières indisponibles pour cette commune.</p>
+                  )}
+                </CategoryBlock>
+              </div>
+
+              {/* Column 3: Politique */}
+              <div className="lg:overflow-y-auto lg:pl-4">
+                <CategoryBlock title="Politique" icon={Scale} isLast>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Stabilité politique</span>
+                    <StabilityBadge level={displayCommune.stability} compact />
+                  </div>
+
+                  {groupedByType.length > 0 ? (
+                    <div className="space-y-5">
+                      {groupedByType.map(({ type, label, elections }) => (
+                        <div key={type}>
+                          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{label}</h4>
+                          <div className="space-y-2">
+                            {elections.map((election) => (
+                              <div key={`${type}-${election.year}`} className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                <div className="flex items-center">
+                                  <span className="text-sm font-bold text-slate-700 w-12">{election.year}</span>
+                                  <div className="h-3 w-3 rounded-full mr-3 flex-shrink-0" style={{ backgroundColor: getBlocColor(election.winnerBloc) }} />
+                                  <div className="flex flex-col">
+                                    <span className="text-sm font-medium text-slate-800">
+                                      {election.winnerName} <span className="text-slate-400 font-normal">({election.winnerNuanceLabel})</span>
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <span className="block text-sm font-bold text-slate-900">{election.score}%</span>
+                                  <span className="block text-[10px] text-slate-400">Part. {election.turnout}%</span>
                                 </div>
                               </div>
-                              <div className="text-right">
-                                <span className="block text-sm font-bold text-slate-900">{election.score}%</span>
-                                <span className="block text-[10px] text-slate-400">Part. {election.turnout}%</span>
-                              </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-slate-400 text-sm">Aucun historique électoral disponible.</p>
-                )}
-              </CategoryBlock>
-
-              {/* 5. Immobilier */}
-              <CategoryBlock title="Immobilier" icon={Euro} isLast>
-                {dvfData ? (
-                  <DvfChart dvfData={dvfData} inline />
-                ) : (
-                  <p className="text-xs text-slate-400">Données immobilières indisponibles pour cette commune.</p>
-                )}
-              </CategoryBlock>
-            </>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-slate-400 text-sm">Aucun historique électoral disponible.</p>
+                  )}
+                </CategoryBlock>
+              </div>
+            </div>
           )}
         </div>
       </div>
