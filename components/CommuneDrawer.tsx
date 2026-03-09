@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Commune, ElectionType, EquipmentDetail, EquipmentDomain, RiskDetail, RiskLevel, DvfData, AirQuality, ClimatData, ClimatProjection } from '../types';
 import { getCommuneByInsee, getEquipmentDetails, getCommuneRisks, getDvfStats, getCommuneAirQuality, AirQualityData, getCommuneClimat } from '../services/communeService';
 import { BLOC_COLORS, EQUIPMENT_DOMAINS, RISK_LEVELS, AIR_QUALITY_LEVELS, CLIMAT_INDICATORS, HEAT_WAVE_LEVELS } from '../constants';
-import CommuneCard from './CommuneCard';
 import StabilityBadge from './StabilityBadge';
 import DvfChart from './DvfChart';
 import {
   X, ShoppingBag, GraduationCap, Heart, Train, Dumbbell,
   AlertTriangle, Wind, Leaf, Store, Scale, Euro, Thermometer, Flame,
+  MapPin, Users,
 } from 'lucide-react';
 
 interface Props {
@@ -290,12 +290,26 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
       />
 
       <div className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[540px] md:inset-0 md:w-auto bg-white shadow-2xl flex flex-col animate-slide-in-right">
-        {/* Header bar */}
-        <div className="flex items-center justify-between px-6 md:px-10 py-4 border-b border-slate-100 flex-shrink-0">
-          <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Détail commune</h3>
+        {/* Header bar with commune identity */}
+        <div className="flex items-center justify-between px-6 md:px-10 py-3 border-b border-slate-100 flex-shrink-0 gap-4">
+          <div className="flex items-baseline gap-3 min-w-0">
+            <h2 className="text-lg font-extrabold text-slate-900 tracking-tight whitespace-nowrap">{displayCommune.name}</h2>
+            <div className="flex items-center gap-3 text-slate-400 text-sm whitespace-nowrap">
+              <span className="inline-flex items-center">
+                <MapPin className="w-3 h-3 mr-1" />
+                {displayCommune.zipcode} — {displayCommune.department}
+              </span>
+              {displayCommune.population != null && (
+                <span className="inline-flex items-center">
+                  <Users className="w-3 h-3 mr-1" />
+                  {displayCommune.population.toLocaleString('fr-FR')} hab.
+                </span>
+              )}
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -303,11 +317,6 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
 
         {/* Scrollable content */}
         <div className="flex-grow overflow-y-auto md:overflow-hidden px-6 py-5 md:px-10 md:flex md:flex-col">
-
-          {/* Commune identity header */}
-          <div className="pb-6 mb-6 border-b border-slate-200 flex-shrink-0">
-            <CommuneCard commune={displayCommune} />
-          </div>
 
           {loading ? (
             <div className="flex flex-col items-center py-16 md:flex-1">
