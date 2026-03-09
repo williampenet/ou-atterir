@@ -300,6 +300,13 @@ const DvfSection: React.FC<{ a: CommuneFullData; b: CommuneFullData; activeTab: 
 };
 
 /* ─── Equipments ─── */
+const pluralizeLabel = (label: string, count: number): string => {
+  if (count <= 1) return label;
+  const last = label[label.length - 1];
+  if (last === 's' || last === 'x' || last === 'z') return label;
+  return label + 's';
+};
+
 const DETAIL_THRESHOLD = 10;
 const ALWAYS_DETAIL_DOMAINS: EquipmentDomain[] = ['C', 'F'];
 
@@ -326,7 +333,7 @@ const renderDomainDetails = (items: EquipmentDetail[], domain: EquipmentDomain) 
       {items.map(item => (
         <div key={item.label} className="flex items-baseline gap-1.5 text-xs text-slate-600">
           <span className="font-semibold text-slate-800 tabular-nums">{item.count}</span>
-          <span className="truncate">{item.label}</span>
+          <span className="truncate">{pluralizeLabel(item.label, item.count)}</span>
         </div>
       ))}
     </div>
