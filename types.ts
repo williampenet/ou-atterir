@@ -82,6 +82,27 @@ export type RiskLevel = 'peu_expose' | 'modere' | 'tres_expose';
 
 export type AirQuality = 'bonne' | 'moyenne' | 'degradee' | 'mauvaise';
 
+export type HeatWaveLevel = 'faible' | 'modere' | 'eleve' | 'tres_eleve';
+
+export interface ClimatProjection {
+  ref: number | null;
+  y2030: number | null;
+  y2050: number | null;
+  y2100: number | null;
+}
+
+export interface ClimatData {
+  icu: number | null;
+  s3: ClimatProjection;
+  s1: ClimatProjection;
+  s2: ClimatProjection;
+  s4: ClimatProjection;
+  r2: ClimatProjection;
+  r4: ClimatProjection;
+  r5Ete: ClimatProjection;
+  g4Ete: ClimatProjection;
+}
+
 export type GeoTag = 'littoral' | 'montagne' | 'campagne';
 
 export interface RiskDetail {
@@ -125,6 +146,7 @@ export interface SearchFilters {
   geoTags?: GeoTag[];
   prixM2Max?: number;
   airQuality?: AirQuality;
+  heatWave?: HeatWaveLevel;
   travelFilter?: TravelFilter;
 }
 

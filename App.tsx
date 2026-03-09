@@ -108,7 +108,7 @@ const App: React.FC = () => {
   };
 
   const activeFilterCount =
-    [filters.department, filters.bloc, filters.matchLevel, filters.riskLevel].filter(Boolean).length +
+    [filters.department, filters.bloc, filters.matchLevel, filters.riskLevel, filters.heatWave].filter(Boolean).length +
     (filters.equipmentFilters?.length ?? 0) +
     (filters.populationSizes?.length ?? 0) +
     (filters.geoTags?.length ?? 0) +

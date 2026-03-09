@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { PoliticalBloc, SearchFilters, MatchLevel, EquipmentFilterKey, PopulationSize, RiskLevel, GeoTag, AirQuality, TransportMode } from '../types';
-import { BLOC_COLORS, EQUIPMENT_CATEGORIES, POPULATION_SIZES, RISK_LEVELS, GEO_TAGS, PRIX_M2_RANGES, AIR_QUALITY_LEVELS, TRANSPORT_MODES, TRAVEL_DURATIONS, formatDepartments, Department } from '../constants';
+import { PoliticalBloc, SearchFilters, MatchLevel, EquipmentFilterKey, PopulationSize, RiskLevel, GeoTag, AirQuality, HeatWaveLevel, TransportMode } from '../types';
+import { BLOC_COLORS, EQUIPMENT_CATEGORIES, POPULATION_SIZES, RISK_LEVELS, GEO_TAGS, PRIX_M2_RANGES, AIR_QUALITY_LEVELS, HEAT_WAVE_LEVELS, TRANSPORT_MODES, TRAVEL_DURATIONS, formatDepartments, Department } from '../constants';
 import { getDepartments } from '../services/communeService';
 import { computeIsochroneInsees } from '../services/isochroneService';
 import { GeocodingResult } from '../services/geocodingService';
@@ -9,7 +9,7 @@ import {
   X, SlidersHorizontal, Shield, Activity,
   ShoppingBag, GraduationCap, Heart, Train, Dumbbell,
   Users, AlertTriangle, ChevronDown, Check,
-  Waves, Mountain, TreePine, Euro, Wind,
+  Waves, Mountain, TreePine, Euro, Wind, Flame,
   Navigation, Bike, Car, Clock, Loader2, TrainFront, Info,
   MapPin, Leaf, Store, Scale,
 } from 'lucide-react';
@@ -85,6 +85,7 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
   const selectedGeoTags = filters.geoTags ?? [];
   const prixM2Max = filters.prixM2Max;
   const airQuality = (filters.airQuality as string) ?? '';
+  const heatWave = (filters.heatWave as string) ?? '';
   const travelFilter = filters.travelFilter;
 
   useEffect(() => {
@@ -188,7 +189,7 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
   };
 
   const activeCount =
-    [department, bloc, matchLevel, riskLevel, prixM2Max, airQuality].filter(Boolean).length +
+    [department, bloc, matchLevel, riskLevel, prixM2Max, airQuality, heatWave].filter(Boolean).length +
     selectedEquipment.length +
     selectedSizes.length +
     selectedGeoTags.length +
@@ -315,6 +316,21 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
                         key={key}
                         active={airQuality === key}
                         onClick={() => update({ airQuality: airQuality === key ? undefined : key as AirQuality })}
+                        activeClass={color}
+                      >
+                        {label}
+                        <span className="text-[10px] font-normal opacity-70">{description}</span>
+                      </Chip>
+                    ))}
+                  </div>
+                </Section>
+                <Section label="Vagues de chaleur en 2050" icon={<Flame className="w-3.5 h-3.5" />}>
+                  <div className="flex flex-wrap gap-2">
+                    {(Object.entries(HEAT_WAVE_LEVELS) as [HeatWaveLevel, { label: string; description: string; color: string }][]).map(([key, { label, description, color }]) => (
+                      <Chip
+                        key={key}
+                        active={heatWave === key}
+                        onClick={() => update({ heatWave: heatWave === key ? undefined : key as HeatWaveLevel })}
                         activeClass={color}
                       >
                         {label}

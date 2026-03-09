@@ -1,4 +1,4 @@
-import { PoliticalBloc, StabilityLevel, EquipmentDomain, EquipmentCategory, PopulationSize, RiskLevel, GeoTag, MarketTension, AirQuality, TransportMode } from './types';
+import { PoliticalBloc, StabilityLevel, EquipmentDomain, EquipmentCategory, PopulationSize, RiskLevel, GeoTag, MarketTension, AirQuality, HeatWaveLevel, TransportMode } from './types';
 
 export const BLOC_COLORS: Record<string, string> = {
   [PoliticalBloc.EXTRÊME_GAUCHE]: '#b91c1c',
@@ -86,6 +86,24 @@ export const AIR_QUALITY_LEVELS: Record<AirQuality, { label: string; description
   degradee: { label: 'Dégradée', description: 'PM2.5 7–9 µg/m³', color: 'bg-amber-50 border-amber-300 text-amber-700' },
   mauvaise: { label: 'Mauvaise', description: 'PM2.5 > 9 µg/m³', color: 'bg-red-50 border-red-300 text-red-700' },
 };
+
+export const HEAT_WAVE_LEVELS: Record<HeatWaveLevel, { label: string; description: string; color: string }> = {
+  faible: { label: 'Faible', description: '< 5 j/an', color: 'bg-emerald-50 border-emerald-300 text-emerald-700' },
+  modere: { label: 'Modéré', description: '5–15 j/an', color: 'bg-sky-50 border-sky-300 text-sky-700' },
+  eleve: { label: 'Élevé', description: '15–30 j/an', color: 'bg-amber-50 border-amber-300 text-amber-700' },
+  tres_eleve: { label: 'Très élevé', description: '> 30 j/an', color: 'bg-red-50 border-red-300 text-red-700' },
+};
+
+export const CLIMAT_INDICATORS = [
+  { key: 's3', label: 'Vagues de chaleur', unit: 'jours/an', description: 'Épisodes prolongés de chaleur jour+nuit' },
+  { key: 's1', label: 'Jours très chauds (≥ 35 °C)', unit: 'jours/an', description: 'T° maximale ≥ 35 °C' },
+  { key: 's2', label: 'Nuits chaudes', unit: 'jours/an', description: 'T° minimale > 20 °C' },
+  { key: 's4', label: 'Vagues de froid', unit: 'jours/an', description: 'Épisodes prolongés de froid' },
+  { key: 'r2', label: 'Précipitations extrêmes', unit: 'mm', description: 'Quantile 99,9 % (~1 fois / 3 ans)' },
+  { key: 'r4', label: 'Risque feu de végétation', unit: 'jours/an', description: 'Jours où IFM > 40' },
+  { key: 'r5Ete', label: 'Sol sec (été)', unit: 'jours', description: 'Réserve eau du sol < 40 %' },
+  { key: 'g4Ete', label: 'Jours de pluie (été)', unit: 'jours', description: 'Cumul > 1 mm' },
+] as const;
 
 export const DEPARTMENT_CODES: Record<string, string> = {
   'Ain': '01', 'Aisne': '02', 'Allier': '03', 'Alpes-de-Haute-Provence': '04',

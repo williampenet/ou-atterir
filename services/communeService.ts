@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Commune, ElectionResult, ElectionType, StabilityLevel, IdealResult, PaginatedResults, SearchFilters, MatchLevel, EquipmentSummary, EquipmentDetail, EquipmentDomain, RiskDetail, DvfData, DvfYearStat, MarketTension, MapMarker, MapBounds } from '../types';
+import { Commune, ElectionResult, ElectionType, StabilityLevel, IdealResult, PaginatedResults, SearchFilters, MatchLevel, EquipmentSummary, EquipmentDetail, EquipmentDomain, RiskDetail, DvfData, DvfYearStat, MarketTension, MapMarker, MapBounds, ClimatData, ClimatProjection } from '../types';
 
 // --------------------------------------------------
 // Row types (database shape)
@@ -213,6 +213,7 @@ export const searchCommunes = async (
   if (filters.geoTags?.length) rpcParams.target_geo_tags = filters.geoTags;
   if (filters.prixM2Max) rpcParams.target_prix_m2_max = filters.prixM2Max;
   if (filters.airQuality) rpcParams.target_air_quality = filters.airQuality;
+  if (filters.heatWave) rpcParams.target_heat_wave = filters.heatWave;
   if (filters.travelFilter?.insees) rpcParams.target_insee_list = filters.travelFilter.insees;
 
   const countParams: Record<string, unknown> = {
@@ -226,6 +227,7 @@ export const searchCommunes = async (
   if (filters.geoTags?.length) countParams.target_geo_tags = filters.geoTags;
   if (filters.prixM2Max) countParams.target_prix_m2_max = filters.prixM2Max;
   if (filters.airQuality) countParams.target_air_quality = filters.airQuality;
+  if (filters.heatWave) countParams.target_heat_wave = filters.heatWave;
   if (filters.travelFilter?.insees) countParams.target_insee_list = filters.travelFilter.insees;
 
   const [resultsRes, countRes] = await Promise.all([
@@ -492,6 +494,7 @@ function buildRpcParams(filters: SearchFilters, limit: number, bounds?: MapBound
   if (filters.geoTags?.length) rpcParams.target_geo_tags = filters.geoTags;
   if (filters.prixM2Max) rpcParams.target_prix_m2_max = filters.prixM2Max;
   if (filters.airQuality) rpcParams.target_air_quality = filters.airQuality;
+  if (filters.heatWave) rpcParams.target_heat_wave = filters.heatWave;
   if (filters.travelFilter?.insees) rpcParams.target_insee_list = filters.travelFilter.insees;
   if (bounds) {
     rpcParams.target_lat_min = bounds.latMin;
@@ -576,6 +579,42 @@ export const searchCommunesForMap = async (
     m.lng >= bounds.lngMin && m.lng <= bounds.lngMax
   );
 };
+
+// --------------------------------------------------
+// API: Climate projections for a commune
+// --------------------------------------------------
+
+function toProjection(ref: number | null, y2030: number | null, y2050: number | null, y2100: number | null): ClimatProjection {
+  return {
+    ref: ref != null ? Number(ref) : null,
+    y2030: y2030 != null ? Number(y2030) : null,
+    y2050: y2050 != null ? Number(y2050) : null,
+    y2100: y2100 != null ? Number(y2100) : null,
+  };
+}
+
+export const getCommuneClimat = async (insee: string): Promise<ClimatData | null> => {
+  const { data, error } = await supabase.rpc('get_commune_climat', { target_insee: insee });
+
+  if (error || !data || (data as unknown[]).length === 0) return null;
+
+  const r = (data as Record<string, number | null>[])[0];
+  return {
+    icu: r.icu != null ? Number(r.icu) : null,
+    s3: toProjection(r.s3_ref, r.s3_2030, r.s3_2050, r.s3_2100),
+    s1: toProjection(r.s1_ref, r.s1_2030, r.s1_2050, r.s1_2100),
+    s2: toProjection(r.s2_ref, r.s2_2030, r.s2_2050, r.s2_2100),
+    s4: toProjection(r.s4_ref, r.s4_2030, r.s4_2050, r.s4_2100),
+    r2: toProjection(r.r2_ref, r.r2_2030, r.r2_2050, r.r2_2100),
+    r4: toProjection(r.r4_ref, r.r4_2030, r.r4_2050, r.r4_2100),
+    r5Ete: toProjection(r.r5_ete_ref, r.r5_ete_2030, r.r5_ete_2050, r.r5_ete_2100),
+    g4Ete: toProjection(r.g4_ete_ref, r.g4_ete_2030, r.g4_ete_2050, r.g4_ete_2100),
+  };
+};
+
+// --------------------------------------------------
+// API: DVF stats for a commune
+// --------------------------------------------------
 
 export const getDvfStats = async (insee: string): Promise<DvfData> => {
   const [statsRes, tensionRes] = await Promise.all([

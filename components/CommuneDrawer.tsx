@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Commune, ElectionType, EquipmentDetail, EquipmentDomain, RiskDetail, RiskLevel, DvfData, AirQuality } from '../types';
-import { getCommuneByInsee, getEquipmentDetails, getCommuneRisks, getDvfStats, getCommuneAirQuality, AirQualityData } from '../services/communeService';
-import { BLOC_COLORS, EQUIPMENT_DOMAINS, RISK_LEVELS, AIR_QUALITY_LEVELS } from '../constants';
+import { Commune, ElectionType, EquipmentDetail, EquipmentDomain, RiskDetail, RiskLevel, DvfData, AirQuality, ClimatData, ClimatProjection } from '../types';
+import { getCommuneByInsee, getEquipmentDetails, getCommuneRisks, getDvfStats, getCommuneAirQuality, AirQualityData, getCommuneClimat } from '../services/communeService';
+import { BLOC_COLORS, EQUIPMENT_DOMAINS, RISK_LEVELS, AIR_QUALITY_LEVELS, CLIMAT_INDICATORS, HEAT_WAVE_LEVELS } from '../constants';
 import CommuneCard from './CommuneCard';
 import StabilityBadge from './StabilityBadge';
 import DvfChart from './DvfChart';
 import {
   X, ShoppingBag, GraduationCap, Heart, Train, Dumbbell,
-  AlertTriangle, Wind, Leaf, Store, Scale, Euro,
+  AlertTriangle, Wind, Leaf, Store, Scale, Euro, Thermometer, Flame,
 } from 'lucide-react';
 
 interface Props {
@@ -114,6 +114,107 @@ const EquipmentDetailsList: React.FC<{ details: EquipmentDetail[] }> = ({ detail
   );
 };
 
+// --------------------------------------------------
+// Climate projections section
+// --------------------------------------------------
+
+function heatColor(ref: number | null, val: number | null): string {
+  if (ref == null || val == null || ref === 0) return 'text-slate-800';
+  const ratio = val / ref;
+  if (ratio <= 1.2) return 'text-slate-800';
+  if (ratio <= 2) return 'text-amber-600';
+  if (ratio <= 5) return 'text-orange-600';
+  return 'text-red-600';
+}
+
+const ClimatRow: React.FC<{ label: string; unit: string; proj: ClimatProjection }> = ({ label, unit, proj }) => {
+  const hasData = proj.ref != null || proj.y2030 != null;
+  if (!hasData) return null;
+  const multiplier = proj.ref && proj.ref > 0 && proj.y2050
+    ? Math.round((proj.y2050 / proj.ref) * 10) / 10
+    : null;
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs font-semibold text-slate-700">{label}</span>
+        {multiplier != null && multiplier > 1 && (
+          <span className="text-[10px] font-bold text-orange-500">x{multiplier} en 2050</span>
+        )}
+      </div>
+      <div className="grid grid-cols-4 gap-1 text-center">
+        <div className="bg-slate-100 rounded-lg py-1.5 px-1">
+          <div className="text-[10px] text-slate-400 mb-0.5">Réf.</div>
+          <div className="text-sm font-bold text-slate-600">{proj.ref != null ? proj.ref.toFixed(1) : '–'}</div>
+        </div>
+        <div className="bg-slate-50 rounded-lg py-1.5 px-1">
+          <div className="text-[10px] text-slate-400 mb-0.5">2030</div>
+          <div className={`text-sm font-bold ${heatColor(proj.ref, proj.y2030)}`}>{proj.y2030 != null ? proj.y2030.toFixed(1) : '–'}</div>
+        </div>
+        <div className="bg-amber-50 rounded-lg py-1.5 px-1 border border-amber-100">
+          <div className="text-[10px] text-amber-500 mb-0.5">2050</div>
+          <div className={`text-sm font-bold ${heatColor(proj.ref, proj.y2050)}`}>{proj.y2050 != null ? proj.y2050.toFixed(1) : '–'}</div>
+        </div>
+        <div className="bg-red-50 rounded-lg py-1.5 px-1 border border-red-100">
+          <div className="text-[10px] text-red-400 mb-0.5">2100</div>
+          <div className={`text-sm font-bold ${heatColor(proj.ref, proj.y2100)}`}>{proj.y2100 != null ? proj.y2100.toFixed(1) : '–'}</div>
+        </div>
+      </div>
+      <div className="text-[10px] text-slate-400 mt-0.5 text-right">{unit}</div>
+    </div>
+  );
+};
+
+const ClimatSection: React.FC<{ data: ClimatData }> = ({ data }) => {
+  const hwLevel = data.s3.y2050 != null
+    ? data.s3.y2050 < 5 ? 'faible' : data.s3.y2050 < 15 ? 'modere' : data.s3.y2050 < 30 ? 'eleve' : 'tres_eleve'
+    : null;
+  const hwConfig = hwLevel ? HEAT_WAVE_LEVELS[hwLevel as keyof typeof HEAT_WAVE_LEVELS] : null;
+
+  const projMap: Record<string, ClimatProjection> = {
+    s3: data.s3, s1: data.s1, s2: data.s2, s4: data.s4,
+    r2: data.r2, r4: data.r4, r5Ete: data.r5Ete, g4Ete: data.g4Ete,
+  };
+
+  return (
+    <CategoryBlock title="Projections climatiques" icon={Thermometer}>
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Vagues de chaleur (2050)</span>
+        {hwConfig && (
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${hwConfig.color}`}>
+            <Flame className="w-2.5 h-2.5" />
+            {hwConfig.label}
+          </span>
+        )}
+      </div>
+
+      {data.icu != null && (
+        <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 mb-2">
+          <span className="text-xs text-slate-600">Îlot de chaleur urbain</span>
+          <div className="flex items-center gap-1">
+            {Array.from({ length: 6 }, (_, i) => (
+              <div
+                key={i}
+                className={`w-2.5 h-2.5 rounded-sm ${i < data.icu! ? 'bg-orange-400' : 'bg-slate-200'}`}
+              />
+            ))}
+            <span className="text-xs font-bold text-slate-700 ml-1">{data.icu}/6</span>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {CLIMAT_INDICATORS.map(({ key, label, unit }) => (
+          <ClimatRow key={key} label={label} unit={unit} proj={projMap[key]} />
+        ))}
+      </div>
+
+      <p className="text-[10px] text-slate-400 mt-3">
+        Source : Climadiag Commune, Météo-France · Scénario TRACC · Réf. 1976-2005
+      </p>
+    </CategoryBlock>
+  );
+};
+
 const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
   const [fullCommune, setFullCommune] = useState<Commune | null>(null);
   const [loading, setLoading] = useState(true);
@@ -121,6 +222,7 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
   const [risks, setRisks] = useState<RiskDetail[]>([]);
   const [dvfData, setDvfData] = useState<DvfData | null>(null);
   const [airQuality, setAirQuality] = useState<AirQualityData | null>(null);
+  const [climatData, setClimatData] = useState<ClimatData | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -129,18 +231,21 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
     setRisks([]);
     setDvfData(null);
     setAirQuality(null);
+    setClimatData(null);
     Promise.all([
       getCommuneByInsee(commune.insee),
       getEquipmentDetails(commune.insee),
       getCommuneRisks(commune.insee),
       getDvfStats(commune.insee),
       getCommuneAirQuality(commune.insee),
-    ]).then(([data, eqs, rks, dvf, aq]) => {
+      getCommuneClimat(commune.insee),
+    ]).then(([data, eqs, rks, dvf, aq, clim]) => {
       setFullCommune(data ?? commune);
       setEqDetails(eqs);
       setRisks(rks);
       setDvfData(dvf);
       setAirQuality(aq);
+      setClimatData(clim);
       setLoading(false);
     });
   }, [commune.insee]);
@@ -258,14 +363,17 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
                 )}
               </CategoryBlock>
 
-              {/* 2. Services et équipements */}
+              {/* 2. Projections climatiques */}
+              {climatData && <ClimatSection data={climatData} />}
+
+              {/* 3. Services et équipements */}
               {eqDetails.length > 0 && (
                 <CategoryBlock title="Services et équipements" icon={Store}>
                   <EquipmentDetailsList details={eqDetails} />
                 </CategoryBlock>
               )}
 
-              {/* 3. Politique */}
+              {/* 4. Politique */}
               <CategoryBlock title="Politique" icon={Scale}>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Stabilité politique</span>
@@ -304,7 +412,7 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
                 )}
               </CategoryBlock>
 
-              {/* 4. Immobilier */}
+              {/* 5. Immobilier */}
               <CategoryBlock title="Immobilier" icon={Euro} isLast>
                 {dvfData ? (
                   <DvfChart dvfData={dvfData} inline />
