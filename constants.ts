@@ -12,7 +12,7 @@ export const BLOC_COLORS: Record<string, string> = {
 
 export const EQUIPMENT_DOMAINS: Record<EquipmentDomain, { label: string; icon: string }> = {
   B: { label: 'Commerces', icon: 'ShoppingBag' },
-  C: { label: 'Enseignement', icon: 'GraduationCap' },
+  C: { label: 'École & enseignement', icon: 'GraduationCap' },
   D: { label: 'Santé', icon: 'Heart' },
   E: { label: 'Transports', icon: 'Train' },
   F: { label: 'Sports & Culture', icon: 'Dumbbell' },
@@ -21,7 +21,7 @@ export const EQUIPMENT_DOMAINS: Record<EquipmentDomain, { label: string; icon: s
 export const EQUIPMENT_CATEGORIES: EquipmentCategory[] = [
   { id: 'B', label: 'Commerces', icon: 'ShoppingBag', filterKey: 'commerces' },
   {
-    id: 'C', label: 'Enseignement', icon: 'GraduationCap',
+    id: 'C', label: 'École & enseignement', icon: 'GraduationCap',
     children: [
       { id: 'creche', label: 'Crèche' },
       { id: 'ecole', label: 'École (maternelle, primaire, élémentaire)' },
