@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { List, Map, SlidersHorizontal } from 'lucide-react';
 import { PoliticalBloc, SearchFilters } from '../types';
-import { BLOC_COLORS } from '../constants';
+import { BLOC_COLORS, formatDepartments, Department } from '../constants';
 import { getDepartments } from '../services/communeService';
 
 const BLOC_OPTIONS = [
@@ -31,10 +31,10 @@ const FilterBar: React.FC<Props> = ({
   activeFilterCount,
   onOpenFilters,
 }) => {
-  const [departments, setDepartments] = useState<string[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
 
   useEffect(() => {
-    getDepartments().then(setDepartments);
+    getDepartments().then(names => setDepartments(formatDepartments(names)));
   }, []);
 
   const dept = filters.department ?? '';
@@ -83,7 +83,7 @@ const FilterBar: React.FC<Props> = ({
           className="hidden sm:block px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all min-w-0 max-w-[160px]"
         >
           <option value="">Département</option>
-          {departments.map(d => <option key={d} value={d}>{d}</option>)}
+          {departments.map(d => <option key={d.name} value={d.name}>{d.code} — {d.name}</option>)}
         </select>
 
         {/* Bloc dropdown — hidden on mobile */}

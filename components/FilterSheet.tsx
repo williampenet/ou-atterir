@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PoliticalBloc, SearchFilters, MatchLevel, EquipmentFilterKey, PopulationSize, RiskLevel, GeoTag, AirQuality, TransportMode } from '../types';
-import { BLOC_COLORS, EQUIPMENT_CATEGORIES, POPULATION_SIZES, RISK_LEVELS, GEO_TAGS, PRIX_M2_RANGES, AIR_QUALITY_LEVELS, TRANSPORT_MODES, TRAVEL_DURATIONS } from '../constants';
+import { BLOC_COLORS, EQUIPMENT_CATEGORIES, POPULATION_SIZES, RISK_LEVELS, GEO_TAGS, PRIX_M2_RANGES, AIR_QUALITY_LEVELS, TRANSPORT_MODES, TRAVEL_DURATIONS, formatDepartments, Department } from '../constants';
 import { getDepartments } from '../services/communeService';
 import { computeIsochroneInsees } from '../services/isochroneService';
 import { GeocodingResult } from '../services/geocodingService';
@@ -72,7 +72,7 @@ const CategoryBlock: React.FC<{
 );
 
 const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose, resultCount }) => {
-  const [departments, setDepartments] = useState<string[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [isochroneLoading, setIsochroneLoading] = useState(false);
 
@@ -88,7 +88,7 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
   const travelFilter = filters.travelFilter;
 
   useEffect(() => {
-    getDepartments().then(setDepartments);
+    getDepartments().then(names => setDepartments(formatDepartments(names)));
   }, []);
 
   useEffect(() => {
@@ -210,8 +210,8 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
       />
 
       {/* Modal: full screen on mobile, centered large on desktop */}
-      <div className="fixed inset-0 z-[70] flex items-start sm:items-center justify-center sm:p-6">
-        <div className="w-full h-full sm:h-auto sm:max-h-[85vh] sm:max-w-5xl bg-white sm:rounded-2xl shadow-2xl flex flex-col animate-filter-sheet">
+      <div className="fixed inset-0 z-[70] flex items-start sm:items-center justify-center sm:p-6 md:p-8 lg:p-12">
+        <div className="w-full h-full sm:h-auto sm:max-h-[85vh] sm:w-[min(100%,560px)] bg-white sm:rounded-2xl shadow-2xl flex flex-col animate-filter-sheet">
 
           {/* Header */}
           <div className="flex items-center justify-between px-5 sm:px-8 py-4 border-b border-slate-200 flex-shrink-0">
@@ -243,7 +243,7 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
 
           {/* Scrollable content — single column by category (desktop & mobile) */}
           <div className="flex-grow overflow-y-auto px-5 sm:px-8 py-6">
-            <div className="max-w-2xl">
+            <div>
 
               {/* 1. Localisation */}
               <CategoryBlock title={FILTER_CATEGORIES[0].label} icon={FILTER_CATEGORIES[0].icon} isLast={false}>
@@ -254,12 +254,12 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
                     className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                   >
                     <option value="">Tous les départements</option>
-                    {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                    {departments.map(d => <option key={d.name} value={d.name}>{d.code} — {d.name}</option>)}
                   </select>
                 </Section>
                 <Section label="Cadre géographique">
                   <div className="flex flex-wrap gap-2">
-                    {(Object.entries(GEO_TAGS) as [GeoTag, { label: string; description: string; color: string }][]).map(([key, { label, description, color }]) => (
+                    {(Object.entries(GEO_TAGS) as [GeoTag, { label: string; color: string }][]).map(([key, { label, color }]) => (
                       <Chip
                         key={key}
                         active={selectedGeoTags.includes(key)}
@@ -268,7 +268,6 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
                       >
                         {GEO_TAG_ICONS[key]}
                         <span>{label}</span>
-                        <span className="text-[10px] font-normal opacity-70">{description}</span>
                       </Chip>
                     ))}
                   </div>

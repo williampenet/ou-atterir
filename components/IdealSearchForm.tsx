@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PoliticalBloc, IdealResult, PaginatedResults } from '../types';
-import { BLOC_COLORS } from '../constants';
+import { BLOC_COLORS, formatDepartments, Department } from '../constants';
 import { getDepartments, searchIdealCommunes } from '../services/communeService';
 import { Compass } from 'lucide-react';
 
@@ -20,11 +20,11 @@ const BLOC_OPTIONS = [
 const IdealSearchForm: React.FC<Props> = ({ onResults, onLoading }) => {
   const [bloc, setBloc] = useState<PoliticalBloc | ''>('');
   const [department, setDepartment] = useState('');
-  const [departments, setDepartments] = useState<string[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    getDepartments().then(setDepartments);
+    getDepartments().then(names => setDepartments(formatDepartments(names)));
   }, []);
 
   const handleSearch = async (page: number = 1) => {
@@ -78,7 +78,7 @@ const IdealSearchForm: React.FC<Props> = ({ onResults, onLoading }) => {
           >
             <option value="">département...</option>
             {departments.map(d => (
-              <option key={d} value={d}>{d}</option>
+              <option key={d.name} value={d.name}>{d.code} — {d.name}</option>
             ))}
           </select>
         </div>
