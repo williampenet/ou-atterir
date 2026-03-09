@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Commune, EquipmentSummary, EquipmentDomain, RiskDetail, RiskLevel, DvfData, DvfYearStat } from '../types';
-import { getCommuneByInsee, getEquipmentSummary, getCommuneRisks, getDvfStats } from '../services/communeService';
+import { Commune, EquipmentDetail, EquipmentDomain, RiskDetail, RiskLevel, DvfData, DvfYearStat } from '../types';
+import { getCommuneByInsee, getEquipmentDetails, getCommuneRisks, getDvfStats } from '../services/communeService';
 import { EQUIPMENT_DOMAINS, RISK_LEVELS, MARKET_TENSION_LEVELS } from '../constants';
 import { X, MapPin, Users, AlertTriangle, ShoppingBag, GraduationCap, Heart, Train, Dumbbell, Home, Building2, BarChart3 } from 'lucide-react';
 
@@ -11,7 +11,7 @@ interface Props {
 
 interface CommuneFullData {
   commune: Commune;
-  equipments: EquipmentSummary[];
+  eqDetails: EquipmentDetail[];
   risks: RiskDetail[];
   dvf: DvfData | null;
 }
@@ -47,11 +47,11 @@ const CompareView: React.FC<Props> = ({ communes, onClose }) => {
     const fetchOne = async (c: Commune): Promise<CommuneFullData> => {
       const [full, eqs, rks, dvf] = await Promise.all([
         getCommuneByInsee(c.insee),
-        getEquipmentSummary(c.insee),
+        getEquipmentDetails(c.insee),
         getCommuneRisks(c.insee),
         getDvfStats(c.insee),
       ]);
-      return { commune: full ?? c, equipments: eqs, risks: rks, dvf };
+      return { commune: full ?? c, eqDetails: eqs, risks: rks, dvf };
     };
 
     Promise.all([fetchOne(communes[0]), fetchOne(communes[1])]).then(([a, b]) => {
@@ -300,77 +300,56 @@ const DvfSection: React.FC<{ a: CommuneFullData; b: CommuneFullData; activeTab: 
 };
 
 /* ─── Equipments ─── */
-const EquipmentsSection: React.FC<{ a: CommuneFullData; b: CommuneFullData; activeTab: number }> = ({ a, b, activeTab }) => {
-  const getCount = (eqs: EquipmentSummary[], domain: EquipmentDomain): number => {
-    const found = eqs.find(e => e.domain === domain);
-    return found?.totalCount ?? 0;
-  };
+const DETAIL_THRESHOLD = 10;
+const ALWAYS_DETAIL_DOMAINS: EquipmentDomain[] = ['C'];
 
-  const renderDesktop = () => (
-    <div className="space-y-2">
-      {ALL_DOMAINS.map(domain => {
-        const Icon = DOMAIN_ICONS[domain];
-        const label = EQUIPMENT_DOMAINS[domain]?.label ?? domain;
-        const countA = getCount(a.equipments, domain);
-        const countB = getCount(b.equipments, domain);
-        const maxCount = Math.max(countA, countB, 1);
+const renderDomainDetails = (items: EquipmentDetail[], domain: EquipmentDomain) => {
+  const domainLabel = EQUIPMENT_DOMAINS[domain]?.label ?? items[0]?.domainLabel ?? domain;
+  const totalCount = items.reduce((sum, i) => sum + i.count, 0);
+  const showDetail = ALWAYS_DETAIL_DOMAINS.includes(domain) || items.length <= DETAIL_THRESHOLD;
 
-        return (
-          <div key={domain} className="flex items-center gap-3">
-            <div className="w-28 flex items-center gap-2 flex-shrink-0">
-              <Icon className="w-3.5 h-3.5 text-indigo-500" />
-              <span className="text-xs font-medium text-slate-600 truncate">{label}</span>
-            </div>
-            <div className="flex-1 flex items-center gap-2">
-              <span className={`text-xs font-bold w-8 text-right ${countA > countB ? 'text-emerald-600' : countA === countB ? 'text-slate-600' : 'text-slate-400'}`}>
-                {countA}
-              </span>
-              <div className="flex-1 flex h-4 gap-0.5">
-                <div className="flex-1 flex justify-end">
-                  <div
-                    className={`h-full rounded-l-full ${countA >= countB ? 'bg-indigo-400' : 'bg-indigo-200'}`}
-                    style={{ width: `${(countA / maxCount) * 100}%` }}
-                  />
-                </div>
-                <div className="flex-1">
-                  <div
-                    className={`h-full rounded-r-full ${countB >= countA ? 'bg-purple-400' : 'bg-purple-200'}`}
-                    style={{ width: `${(countB / maxCount) * 100}%` }}
-                  />
-                </div>
-              </div>
-              <span className={`text-xs font-bold w-8 ${countB > countA ? 'text-emerald-600' : countB === countA ? 'text-slate-600' : 'text-slate-400'}`}>
-                {countB}
-              </span>
-            </div>
-          </div>
-        );
-      })}
-      <div className="flex items-center justify-between pt-1">
-        <span className="text-[10px] text-indigo-500 font-semibold">{a.commune.name} ({a.commune.zipcode})</span>
-        <span className="text-[10px] text-purple-500 font-semibold">{b.commune.name} ({b.commune.zipcode})</span>
-      </div>
+  if (!showDetail) {
+    return (
+      <p className="text-xs text-slate-500">
+        <span className="font-semibold text-slate-800">{totalCount}</span> {domainLabel.toLowerCase()}
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-0.5">
+      {items.map(item => (
+        <div key={item.label} className="flex items-baseline gap-1.5 text-xs text-slate-600">
+          <span className="font-semibold text-slate-800 tabular-nums">{item.count}</span>
+          <span className="truncate">{item.label}</span>
+        </div>
+      ))}
     </div>
   );
+};
 
-  const renderMobileColumn = (d: CommuneFullData, other: CommuneFullData) => (
-    <div className="grid grid-cols-2 gap-2">
-      {ALL_DOMAINS.map(domain => {
+const EquipmentsSection: React.FC<{ a: CommuneFullData; b: CommuneFullData; activeTab: number }> = ({ a, b, activeTab }) => {
+  const allDomains = ALL_DOMAINS.filter(d =>
+    a.eqDetails.some(i => i.domain === d) || b.eqDetails.some(i => i.domain === d)
+  );
+
+  const renderColumn = (d: CommuneFullData) => (
+    <div className="flex-1 min-w-0 space-y-3">
+      {allDomains.map(domain => {
         const Icon = DOMAIN_ICONS[domain];
-        const label = EQUIPMENT_DOMAINS[domain]?.label ?? domain;
-        const count = getCount(d.equipments, domain);
-        const otherCount = getCount(other.equipments, domain);
+        const items = d.eqDetails.filter(i => i.domain === domain);
+        const domainLabel = EQUIPMENT_DOMAINS[domain]?.label ?? domain;
         return (
-          <div key={domain} className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-slate-100">
-            <Icon className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-slate-700 truncate">{label}</p>
-              <p className="text-[10px] text-slate-400">
-                <HighlightValue value={count} otherValue={otherCount}>
-                  {count} équipement{count > 1 ? 's' : ''}
-                </HighlightValue>
-              </p>
+          <div key={domain}>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Icon className="w-3.5 h-3.5 text-indigo-500" />
+              <span className="text-xs font-bold text-slate-700">{domainLabel}</span>
             </div>
+            {items.length > 0 ? (
+              <div className="pl-5.5">{renderDomainDetails(items, domain)}</div>
+            ) : (
+              <p className="text-xs text-slate-400 pl-5.5">—</p>
+            )}
           </div>
         );
       })}
@@ -380,9 +359,13 @@ const EquipmentsSection: React.FC<{ a: CommuneFullData; b: CommuneFullData; acti
   return (
     <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
       <SectionTitle>Équipements & services</SectionTitle>
-      <div className="hidden sm:block">{renderDesktop()}</div>
+      <div className="hidden sm:flex gap-6">
+        {renderColumn(a)}
+        <div className="w-px bg-slate-200 self-stretch" />
+        {renderColumn(b)}
+      </div>
       <div className="sm:hidden">
-        {renderMobileColumn(activeTab === 0 ? a : b, activeTab === 0 ? b : a)}
+        {renderColumn(activeTab === 0 ? a : b)}
       </div>
     </div>
   );

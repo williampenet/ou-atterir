@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Commune, ElectionType, EquipmentSummary, EquipmentDomain, RiskDetail, RiskLevel, DvfData, AirQuality } from '../types';
-import { getCommuneByInsee, getEquipmentSummary, getCommuneRisks, getDvfStats, getCommuneAirQuality, AirQualityData } from '../services/communeService';
+import { Commune, ElectionType, EquipmentDetail, EquipmentDomain, RiskDetail, RiskLevel, DvfData, AirQuality } from '../types';
+import { getCommuneByInsee, getEquipmentDetails, getCommuneRisks, getDvfStats, getCommuneAirQuality, AirQualityData } from '../services/communeService';
 import { BLOC_COLORS, EQUIPMENT_DOMAINS, RISK_LEVELS, AIR_QUALITY_LEVELS } from '../constants';
 import CommuneCard from './CommuneCard';
 import StabilityBadge from './StabilityBadge';
@@ -46,10 +46,54 @@ const CategoryBlock: React.FC<{
   </div>
 );
 
+const DETAIL_THRESHOLD = 10;
+const ALWAYS_DETAIL_DOMAINS: EquipmentDomain[] = ['C'];
+
+const EquipmentDetailsList: React.FC<{ details: EquipmentDetail[] }> = ({ details }) => {
+  const domains = (['B', 'C', 'D', 'E', 'F'] as EquipmentDomain[]).filter(d =>
+    details.some(item => item.domain === d)
+  );
+
+  return (
+    <div className="space-y-4">
+      {domains.map(domain => {
+        const items = details.filter(d => d.domain === domain);
+        const Icon = DOMAIN_ICONS[domain];
+        const domainLabel = EQUIPMENT_DOMAINS[domain]?.label ?? items[0]?.domainLabel ?? domain;
+        const totalCount = items.reduce((sum, i) => sum + i.count, 0);
+        const showDetail = ALWAYS_DETAIL_DOMAINS.includes(domain) || items.length <= DETAIL_THRESHOLD;
+
+        return (
+          <div key={domain}>
+            <div className="flex items-center gap-2 mb-2">
+              <Icon className="w-3.5 h-3.5 text-indigo-500" />
+              <span className="text-xs font-bold text-slate-700">{domainLabel}</span>
+            </div>
+            {showDetail ? (
+              <div className="grid grid-cols-2 gap-1 pl-5.5">
+                {items.map(item => (
+                  <div key={item.label} className="flex items-baseline gap-1.5 text-xs text-slate-600">
+                    <span className="font-semibold text-slate-800 tabular-nums">{item.count}</span>
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500 pl-5.5">
+                <span className="font-semibold text-slate-800">{totalCount}</span> {domainLabel.toLowerCase()}
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
   const [fullCommune, setFullCommune] = useState<Commune | null>(null);
   const [loading, setLoading] = useState(true);
-  const [equipments, setEquipments] = useState<EquipmentSummary[]>([]);
+  const [eqDetails, setEqDetails] = useState<EquipmentDetail[]>([]);
   const [risks, setRisks] = useState<RiskDetail[]>([]);
   const [dvfData, setDvfData] = useState<DvfData | null>(null);
   const [airQuality, setAirQuality] = useState<AirQualityData | null>(null);
@@ -57,19 +101,19 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
   useEffect(() => {
     setLoading(true);
     setFullCommune(null);
-    setEquipments([]);
+    setEqDetails([]);
     setRisks([]);
     setDvfData(null);
     setAirQuality(null);
     Promise.all([
       getCommuneByInsee(commune.insee),
-      getEquipmentSummary(commune.insee),
+      getEquipmentDetails(commune.insee),
       getCommuneRisks(commune.insee),
       getDvfStats(commune.insee),
       getCommuneAirQuality(commune.insee),
     ]).then(([data, eqs, rks, dvf, aq]) => {
       setFullCommune(data ?? commune);
-      setEquipments(eqs);
+      setEqDetails(eqs);
       setRisks(rks);
       setDvfData(dvf);
       setAirQuality(aq);
@@ -191,22 +235,9 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
               </CategoryBlock>
 
               {/* 2. Services et équipements */}
-              {equipments.length > 0 && (
+              {eqDetails.length > 0 && (
                 <CategoryBlock title="Services et équipements" icon={Store}>
-                  <div className="grid grid-cols-2 gap-2">
-                    {equipments.map(eq => {
-                      const Icon = DOMAIN_ICONS[eq.domain];
-                      return (
-                        <div key={eq.domain} className="flex items-center gap-2 bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
-                          <Icon className="w-4 h-4 text-indigo-500 flex-shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold text-slate-700 truncate">{EQUIPMENT_DOMAINS[eq.domain]?.label ?? eq.domainLabel}</p>
-                            <p className="text-[10px] text-slate-400">{eq.totalCount} équipement{eq.totalCount > 1 ? 's' : ''}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <EquipmentDetailsList details={eqDetails} />
                 </CategoryBlock>
               )}
 

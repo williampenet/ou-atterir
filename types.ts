@@ -134,6 +134,13 @@ export interface EquipmentSummary {
   totalCount: number;
 }
 
+export interface EquipmentDetail {
+  domain: EquipmentDomain;
+  domainLabel: string;
+  label: string;
+  count: number;
+}
+
 export interface MapMarker {
   insee: string;
   name: string;

@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Commune, ElectionResult, ElectionType, StabilityLevel, IdealResult, PaginatedResults, SearchFilters, MatchLevel, EquipmentSummary, EquipmentDomain, RiskDetail, DvfData, DvfYearStat, MarketTension, MapMarker, MapBounds } from '../types';
+import { Commune, ElectionResult, ElectionType, StabilityLevel, IdealResult, PaginatedResults, SearchFilters, MatchLevel, EquipmentSummary, EquipmentDetail, EquipmentDomain, RiskDetail, DvfData, DvfYearStat, MarketTension, MapMarker, MapBounds } from '../types';
 
 // --------------------------------------------------
 // Row types (database shape)
@@ -342,6 +342,25 @@ export const getEquipmentSummary = async (insee: string): Promise<EquipmentSumma
     domain: row.domain as EquipmentDomain,
     domainLabel: row.domain_label,
     totalCount: row.total_count,
+  }));
+};
+
+// --------------------------------------------------
+// API: Equipment details for a commune
+// --------------------------------------------------
+
+export const getEquipmentDetails = async (insee: string): Promise<EquipmentDetail[]> => {
+  const { data, error } = await supabase.rpc('get_commune_equipment_details', {
+    target_insee: insee,
+  });
+
+  if (error || !data) return [];
+
+  return (data as { domain: string; domain_label: string; equipment_label: string; count: number }[]).map(row => ({
+    domain: row.domain as EquipmentDomain,
+    domainLabel: row.domain_label,
+    label: row.equipment_label,
+    count: row.count,
   }));
 };
 
