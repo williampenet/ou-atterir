@@ -48,9 +48,13 @@ const CategoryBlock: React.FC<{
 
 const pluralizeLabel = (label: string, count: number): string => {
   if (count <= 1) return label;
-  const last = label[label.length - 1];
-  if (last === 's' || last === 'x' || last === 'z') return label;
-  return label + 's';
+  const words = label.split(' ');
+  const first = words[0];
+  const lastChar = first[first.length - 1];
+  if (lastChar !== 's' && lastChar !== 'x' && lastChar !== 'z') {
+    words[0] = first + 's';
+  }
+  return words.join(' ');
 };
 
 const DETAIL_THRESHOLD = 10;
