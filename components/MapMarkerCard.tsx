@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Shield, Activity, MapPin, ChevronRight } from 'lucide-react';
+import { X, MapPin, ChevronRight } from 'lucide-react';
 import { MapMarker } from '../types';
 import { BLOC_COLORS } from '../constants';
 
@@ -11,8 +11,6 @@ interface Props {
 
 const MapMarkerCard: React.FC<Props> = ({ marker, onClose, onOpenDrawer }) => {
   const blocColor = marker.latestBloc ? (BLOC_COLORS[marker.latestBloc] ?? '#94a3b8') : '#94a3b8';
-  const isForteresse = marker.matchLevel === 'forteresse';
-  const hasBadge = marker.matchLevel !== 'all';
 
   return (
     <div className="absolute bottom-4 left-4 right-4 z-[400] pointer-events-none sm:left-auto sm:right-4 sm:max-w-sm">
@@ -20,27 +18,19 @@ const MapMarkerCard: React.FC<Props> = ({ marker, onClose, onOpenDrawer }) => {
         <div className="p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <div className="flex items-center text-slate-400 text-xs mb-1">
-                <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
-                {marker.zipcode}
-              </div>
-              <h3 className="text-base font-bold text-slate-800 truncate">{marker.name}</h3>
-              <div className="flex items-center gap-2 mt-1.5">
-                <div
-                  className="w-3 h-3 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: blocColor }}
-                />
-                <span className="text-xs text-slate-500">{marker.latestBloc ?? 'Divers'}</span>
-                {hasBadge && (
-                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    isForteresse
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-amber-100 text-amber-700'
-                  }`}>
-                    {isForteresse ? <Shield className="w-2.5 h-2.5" /> : <Activity className="w-2.5 h-2.5" />}
-                    {isForteresse ? 'Forteresse' : 'En ballottage'}
-                  </span>
-                )}
+              <h3 className="text-base font-bold text-slate-800 truncate mb-1">{marker.name}</h3>
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <span className="inline-flex items-center">
+                  <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
+                  {marker.zipcode}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <div
+                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: blocColor }}
+                  />
+                  <span className="text-slate-500">{marker.latestBloc ?? 'Divers'}</span>
+                </div>
               </div>
             </div>
             <button

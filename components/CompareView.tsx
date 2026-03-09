@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Commune, EquipmentSummary, EquipmentDomain, RiskDetail, RiskLevel, DvfData, DvfYearStat } from '../types';
 import { getCommuneByInsee, getEquipmentSummary, getCommuneRisks, getDvfStats } from '../services/communeService';
-import { EQUIPMENT_DOMAINS, RISK_LEVELS, MARKET_TENSION_LEVELS, STABILITY_COLORS } from '../constants';
+import { EQUIPMENT_DOMAINS, RISK_LEVELS, MARKET_TENSION_LEVELS } from '../constants';
 import { X, MapPin, Users, AlertTriangle, ShoppingBag, GraduationCap, Heart, Train, Dumbbell, Home, Building2, BarChart3 } from 'lucide-react';
-import StabilityBadge from './StabilityBadge';
 
 interface Props {
   communes: [Commune, Commune];
@@ -140,15 +139,14 @@ const HighlightValue: React.FC<{ value: number | null; otherValue: number | null
 const HeaderSection: React.FC<{ a: CommuneFullData; b: CommuneFullData; activeTab: number }> = ({ a, b, activeTab }) => {
   const renderColumn = (d: CommuneFullData) => (
     <div className="flex-1 min-w-0">
-      <div className="flex items-center gap-2 text-slate-400 text-xs mb-1">
-        <MapPin className="w-3 h-3" />
-        {d.commune.zipcode} — {d.commune.department}
-      </div>
-      <h2 className="text-xl font-extrabold text-slate-900 tracking-tight mb-2">{d.commune.name}</h2>
-      <div className="flex items-center gap-3 flex-wrap">
-        <StabilityBadge level={d.commune.stability} />
+      <h2 className="text-xl font-extrabold text-slate-900 tracking-tight mb-1">{d.commune.name}</h2>
+      <div className="flex items-center gap-3 text-slate-400 text-xs">
+        <span className="inline-flex items-center gap-1">
+          <MapPin className="w-3 h-3" />
+          {d.commune.zipcode} — {d.commune.department}
+        </span>
         {d.commune.population != null && (
-          <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+          <span className="inline-flex items-center gap-1 text-slate-500">
             <Users className="w-3 h-3" />
             <HighlightValue value={d.commune.population} otherValue={d === a ? b.commune.population ?? null : a.commune.population ?? null}>
               {d.commune.population.toLocaleString('fr-FR')} hab.
