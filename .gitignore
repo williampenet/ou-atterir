@@ -10,4 +10,5 @@ supabase/seed_real_data.sql
 supabase/seed_commune_equipments.sql
 supabase/seed_population.sql
 supabase/seed_georisques.sql
-supabase/.temp/
+supabase/.temp/supabase/seed_climadiag.sql
+data/climadiag/
