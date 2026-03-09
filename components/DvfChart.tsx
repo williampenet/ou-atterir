@@ -14,6 +14,7 @@ import { Home, Building2, TrendingUp, TrendingDown, Minus, BarChart3 } from 'luc
 
 interface Props {
   dvfData: DvfData;
+  inline?: boolean;
 }
 
 const MAISON_COLOR = '#f59e0b';
@@ -24,7 +25,7 @@ const formatPrice = (v: number | null): string => {
   return v.toLocaleString('fr-FR') + ' €';
 };
 
-const DvfChart: React.FC<Props> = ({ dvfData }) => {
+const DvfChart: React.FC<Props> = ({ dvfData, inline }) => {
   const { stats, tension, transactionsDerniereAnnee } = dvfData;
 
   const { chartData, latestMaison, latestAppart, evolutionMaison, evolutionAppart } = useMemo(() => {
@@ -71,6 +72,9 @@ const DvfChart: React.FC<Props> = ({ dvfData }) => {
   }, [stats]);
 
   if (stats.length === 0) {
+    if (inline) {
+      return <p className="text-xs text-slate-400">Données indisponibles pour cette commune.</p>;
+    }
     return (
       <div className="mt-5 bg-slate-50 rounded-xl p-4 border border-slate-200">
         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Marché immobilier</h4>
@@ -122,15 +126,15 @@ const DvfChart: React.FC<Props> = ({ dvfData }) => {
     return null;
   };
 
-  return (
-    <div className="mt-5 bg-slate-50 rounded-xl p-4 border border-slate-200">
+  const content = (
+    <>
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Marché immobilier</h4>
+        {!inline && <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Marché immobilier</h4>}
         {tension && (
           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${MARKET_TENSION_LEVELS[tension].color}`}>
             <BarChart3 className="w-2.5 h-2.5" />
-            {MARKET_TENSION_LEVELS[tension].label}
+            Marché {MARKET_TENSION_LEVELS[tension].label.toLowerCase()}
           </span>
         )}
       </div>
@@ -249,6 +253,14 @@ const DvfChart: React.FC<Props> = ({ dvfData }) => {
           : 'Aucune transaction récente'
         }
       </p>
+    </>
+  );
+
+  if (inline) return <div>{content}</div>;
+
+  return (
+    <div className="mt-5 bg-slate-50 rounded-xl p-4 border border-slate-200">
+      {content}
     </div>
   );
 };
