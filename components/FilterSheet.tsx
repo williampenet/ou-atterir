@@ -11,7 +11,18 @@ import {
   Users, AlertTriangle, ChevronDown, Check,
   Waves, Mountain, TreePine, Euro, Wind,
   Navigation, Bike, Car, Clock, Loader2, TrainFront, Info,
+  MapPin, Leaf, Store, Scale,
 } from 'lucide-react';
+
+/** Order and labels for filter categories (M3-style grouped filters) */
+const FILTER_CATEGORIES = [
+  { id: 'localisation', label: 'Localisation', icon: MapPin },
+  { id: 'environnement', label: 'Environnement et risques', icon: Leaf },
+  { id: 'services', label: 'Services et équipements', icon: Store },
+  { id: 'politique', label: 'Politique', icon: Scale },
+  { id: 'accessibilite', label: 'Accessibilité', icon: Navigation },
+  { id: 'immobilier', label: 'Immobilier', icon: Euro },
+] as const;
 
 interface Props {
   filters: SearchFilters;
@@ -42,6 +53,23 @@ const GEO_TAG_ICONS: Record<GeoTag, React.ReactNode> = {
 };
 
 const TRANSPORT_ICONS: Record<string, React.FC<{ className?: string }>> = { TrainFront, Bike, Car };
+
+const CategoryBlock: React.FC<{
+  title: string;
+  icon: React.FC<{ className?: string }>;
+  children: React.ReactNode;
+  isLast?: boolean;
+}> = ({ title, icon: Icon, children, isLast }) => (
+  <div className={isLast ? '' : 'border-b border-slate-200 pb-6 mb-6'}>
+    <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600">
+        <Icon className="w-4 h-4" />
+      </div>
+      <h3 className="text-sm font-bold text-slate-800 tracking-tight">{title}</h3>
+    </div>
+    <div className="space-y-5">{children}</div>
+  </div>
+);
 
 const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose, resultCount }) => {
   const [departments, setDepartments] = useState<string[]>([]);
@@ -213,14 +241,210 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
             </div>
           </div>
 
-          {/* Scrollable content — multi-column on desktop */}
+          {/* Scrollable content — single column by category (desktop & mobile) */}
           <div className="flex-grow overflow-y-auto px-5 sm:px-8 py-6">
-            <div className="sm:grid sm:grid-cols-3 sm:gap-10 space-y-6 sm:space-y-0">
+            <div className="max-w-2xl">
 
-              {/* ── Column 1: Location & Politics ── */}
-              <div className="space-y-6">
-                {/* Travel time */}
-                <Section label="Temps de trajet" icon={<Navigation className="w-3.5 h-3.5" />}>
+              {/* 1. Localisation */}
+              <CategoryBlock title={FILTER_CATEGORIES[0].label} icon={FILTER_CATEGORIES[0].icon} isLast={false}>
+                <Section label="Département">
+                  <select
+                    value={department}
+                    onChange={(e) => update({ department: e.target.value || undefined })}
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                  >
+                    <option value="">Tous les départements</option>
+                    {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </Section>
+                <Section label="Cadre géographique">
+                  <div className="flex flex-wrap gap-2">
+                    {(Object.entries(GEO_TAGS) as [GeoTag, { label: string; description: string; color: string }][]).map(([key, { label, description, color }]) => (
+                      <Chip
+                        key={key}
+                        active={selectedGeoTags.includes(key)}
+                        onClick={() => toggleGeoTag(key)}
+                        activeClass={color}
+                      >
+                        {GEO_TAG_ICONS[key]}
+                        <span>{label}</span>
+                        <span className="text-[10px] font-normal opacity-70">{description}</span>
+                      </Chip>
+                    ))}
+                  </div>
+                </Section>
+                <Section label="Taille de commune" icon={<Users className="w-3.5 h-3.5" />}>
+                  <div className="flex flex-wrap gap-2">
+                    {(Object.entries(POPULATION_SIZES) as [PopulationSize, { label: string; min: number; max: number }][]).map(([key, { label, max }]) => (
+                      <Chip
+                        key={key}
+                        active={selectedSizes.includes(key)}
+                        onClick={() => toggleSize(key)}
+                        activeClass="bg-violet-50 border-violet-300 text-violet-700"
+                      >
+                        {label}
+                        <span className="text-[10px] font-normal opacity-70">
+                          {max === Infinity ? '200k+' : max >= 1000 ? `<${max / 1000}k` : `<${max}`}
+                        </span>
+                      </Chip>
+                    ))}
+                  </div>
+                </Section>
+              </CategoryBlock>
+
+              {/* 2. Environnement et risques */}
+              <CategoryBlock title={FILTER_CATEGORIES[1].label} icon={FILTER_CATEGORIES[1].icon} isLast={false}>
+                <Section label="Exposition aux risques" icon={<AlertTriangle className="w-3.5 h-3.5" />}>
+                  <div className="flex flex-wrap gap-2">
+                    {(Object.entries(RISK_LEVELS) as [RiskLevel, { label: string; description: string; color: string }][]).map(([key, { label, description, color }]) => (
+                      <Chip
+                        key={key}
+                        active={riskLevel === key}
+                        onClick={() => update({ riskLevel: riskLevel === key ? undefined : key as RiskLevel })}
+                        activeClass={color}
+                      >
+                        {label}
+                        <span className="text-[10px] font-normal opacity-70">{description}</span>
+                      </Chip>
+                    ))}
+                  </div>
+                </Section>
+                <Section label="Qualité de l'air" icon={<Wind className="w-3.5 h-3.5" />}>
+                  <div className="flex flex-wrap gap-2">
+                    {(Object.entries(AIR_QUALITY_LEVELS) as [AirQuality, { label: string; description: string; color: string }][]).map(([key, { label, description, color }]) => (
+                      <Chip
+                        key={key}
+                        active={airQuality === key}
+                        onClick={() => update({ airQuality: airQuality === key ? undefined : key as AirQuality })}
+                        activeClass={color}
+                      >
+                        {label}
+                        <span className="text-[10px] font-normal opacity-70">{description}</span>
+                      </Chip>
+                    ))}
+                  </div>
+                </Section>
+              </CategoryBlock>
+
+              {/* 3. Services et équipements */}
+              <CategoryBlock title={FILTER_CATEGORIES[2].label} icon={FILTER_CATEGORIES[2].icon} isLast={false}>
+                <Section label="Équipements">
+                  <div className="space-y-1.5">
+                    {EQUIPMENT_CATEGORIES.map(cat => {
+                      const Icon = CATEGORY_ICONS[cat.icon];
+                      const isExpanded = expandedCategories.has(cat.id);
+
+                      if (cat.filterKey) {
+                        const active = selectedEquipment.includes(cat.filterKey);
+                        return (
+                          <button
+                            key={cat.id}
+                            onClick={() => toggleEquipment(cat.filterKey!)}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-full text-sm font-medium border transition-all ${
+                              active
+                                ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                                : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
+                            }`}
+                          >
+                            {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
+                            <span className="flex-grow text-left">{cat.label}</span>
+                            {active && <Check className="w-4 h-4 text-indigo-500" />}
+                          </button>
+                        );
+                      }
+
+                      const childKeys = cat.children!.map(c => c.id);
+                      const selectedChildren = childKeys.filter(k => selectedEquipment.includes(k));
+
+                      return (
+                        <div key={cat.id}>
+                          <button
+                            onClick={() => toggleCategory(cat.id)}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-full text-sm font-medium border transition-all ${
+                              selectedChildren.length > 0
+                                ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                                : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
+                            }`}
+                          >
+                            {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
+                            <span className="flex-grow text-left">{cat.label}</span>
+                            {selectedChildren.length > 0 && (
+                              <span className="text-[10px] font-bold bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full">
+                                {selectedChildren.length}
+                              </span>
+                            )}
+                            <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                          </button>
+
+                          {isExpanded && (
+                            <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-slate-100 pl-3">
+                              {cat.children!.map(child => {
+                                const active = selectedEquipment.includes(child.id);
+                                return (
+                                  <button
+                                    key={child.id}
+                                    onClick={() => toggleEquipment(child.id)}
+                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium transition-all ${
+                                      active
+                                        ? 'bg-indigo-50 text-indigo-700'
+                                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                                    }`}
+                                  >
+                                    <span className="flex-grow text-left">{child.label}</span>
+                                    {active && <Check className="w-3.5 h-3.5 text-indigo-500" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Section>
+              </CategoryBlock>
+
+              {/* 4. Politique */}
+              <CategoryBlock title={FILTER_CATEGORIES[3].label} icon={FILTER_CATEGORIES[3].icon} isLast={false}>
+                <Section label="Tendance politique">
+                  <div className="flex flex-wrap gap-2">
+                    {BLOC_OPTIONS.map(o => (
+                      <Chip
+                        key={o.value}
+                        active={bloc === o.value}
+                        onClick={() => update({ bloc: bloc === o.value ? undefined : o.value as PoliticalBloc })}
+                        activeClass="border-indigo-300 text-indigo-700"
+                        style={bloc === o.value ? { backgroundColor: `${BLOC_COLORS[o.value]}15`, borderColor: BLOC_COLORS[o.value], color: BLOC_COLORS[o.value] } : {}}
+                      >
+                        <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: BLOC_COLORS[o.value] }} />
+                        {o.label}
+                      </Chip>
+                    ))}
+                  </div>
+                </Section>
+                <Section label="Stabilité politique">
+                  <div className="flex flex-wrap gap-2">
+                    <Chip
+                      active={matchLevel === 'forteresse'}
+                      onClick={() => update({ matchLevel: matchLevel === 'forteresse' ? undefined : 'forteresse' })}
+                      activeClass="bg-emerald-50 border-emerald-300 text-emerald-700"
+                    >
+                      <Shield className="w-3.5 h-3.5" /> Forteresse
+                    </Chip>
+                    <Chip
+                      active={matchLevel === 'tendance'}
+                      onClick={() => update({ matchLevel: matchLevel === 'tendance' ? undefined : 'tendance' })}
+                      activeClass="bg-amber-50 border-amber-300 text-amber-700"
+                    >
+                      <Activity className="w-3.5 h-3.5" /> En ballottage
+                    </Chip>
+                  </div>
+                </Section>
+              </CategoryBlock>
+
+              {/* 5. Accessibilité */}
+              <CategoryBlock title={FILTER_CATEGORIES[4].label} icon={FILTER_CATEGORIES[4].icon} isLast={false}>
+                <Section label="Temps de trajet">
                   <div className="space-y-3">
                     <AddressAutocomplete
                       value={travelFilter?.address ?? ''}
@@ -232,11 +456,11 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
                       <>
                         <div>
                           <span className="block text-[11px] text-slate-400 mb-1.5">Mode de transport</span>
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2">
                             {TRANSPORT_MODES.map(({ key, label, icon }) => {
                               const Icon = TRANSPORT_ICONS[icon];
                               return (
-                                <ToggleButton
+                                <Chip
                                   key={key}
                                   active={travelFilter.mode === key}
                                   onClick={() => handleTransportMode(key)}
@@ -248,7 +472,7 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
                                 >
                                   {Icon && <Icon className="w-3.5 h-3.5" />}
                                   {label}
-                                </ToggleButton>
+                                </Chip>
                               );
                             })}
                           </div>
@@ -256,9 +480,9 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
 
                         <div>
                           <span className="block text-[11px] text-slate-400 mb-1.5">Durée maximale</span>
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2">
                             {TRAVEL_DURATIONS.map(d => (
-                              <ToggleButton
+                              <Chip
                                 key={d}
                                 active={travelFilter.duration === d}
                                 onClick={() => handleTravelDuration(d)}
@@ -266,7 +490,7 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
                               >
                                 <Clock className="w-3.5 h-3.5" />
                                 {d} min
-                              </ToggleButton>
+                              </Chip>
                             ))}
                           </div>
                         </div>
@@ -295,229 +519,25 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
                     )}
                   </div>
                 </Section>
+              </CategoryBlock>
 
-                {/* Department */}
-                <Section label="Département">
-                  <select
-                    value={department}
-                    onChange={(e) => update({ department: e.target.value || undefined })}
-                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                  >
-                    <option value="">Tous les départements</option>
-                    {departments.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                </Section>
-
-                {/* Political bloc */}
-                <Section label="Tendance politique">
+              {/* 6. Immobilier */}
+              <CategoryBlock title={FILTER_CATEGORIES[5].label} icon={FILTER_CATEGORIES[5].icon} isLast={true}>
+                <Section label="Prix au m²">
                   <div className="flex flex-wrap gap-2">
-                    {BLOC_OPTIONS.map(o => (
-                      <ToggleButton
-                        key={o.value}
-                        active={bloc === o.value}
-                        onClick={() => update({ bloc: bloc === o.value ? undefined : o.value as PoliticalBloc })}
-                        activeClass="border-indigo-300 text-indigo-700"
-                        style={bloc === o.value ? { backgroundColor: `${BLOC_COLORS[o.value]}15`, borderColor: BLOC_COLORS[o.value], color: BLOC_COLORS[o.value] } : {}}
-                      >
-                        <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: BLOC_COLORS[o.value] }} />
-                        {o.label}
-                      </ToggleButton>
-                    ))}
-                  </div>
-                </Section>
-
-                {/* Stability */}
-                <Section label="Stabilité politique">
-                  <div className="flex gap-2">
-                    <ToggleButton
-                      active={matchLevel === 'forteresse'}
-                      onClick={() => update({ matchLevel: matchLevel === 'forteresse' ? undefined : 'forteresse' })}
-                      activeClass="bg-emerald-50 border-emerald-300 text-emerald-700"
-                    >
-                      <Shield className="w-3.5 h-3.5" /> Forteresse
-                    </ToggleButton>
-                    <ToggleButton
-                      active={matchLevel === 'tendance'}
-                      onClick={() => update({ matchLevel: matchLevel === 'tendance' ? undefined : 'tendance' })}
-                      activeClass="bg-amber-50 border-amber-300 text-amber-700"
-                    >
-                      <Activity className="w-3.5 h-3.5" /> En ballottage
-                    </ToggleButton>
-                  </div>
-                </Section>
-              </div>
-
-              {/* ── Column 2: Services & Environment ── */}
-              <div className="space-y-6">
-                {/* Equipment categories */}
-                <Section label="Équipements">
-                  <div className="space-y-1.5">
-                    {EQUIPMENT_CATEGORIES.map(cat => {
-                      const Icon = CATEGORY_ICONS[cat.icon];
-                      const isExpanded = expandedCategories.has(cat.id);
-
-                      if (cat.filterKey) {
-                        const active = selectedEquipment.includes(cat.filterKey);
-                        return (
-                          <button
-                            key={cat.id}
-                            onClick={() => toggleEquipment(cat.filterKey!)}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium border transition-all ${
-                              active
-                                ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
-                                : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
-                            }`}
-                          >
-                            {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
-                            <span className="flex-grow text-left">{cat.label}</span>
-                            {active && <Check className="w-4 h-4 text-indigo-500" />}
-                          </button>
-                        );
-                      }
-
-                      const childKeys = cat.children!.map(c => c.id);
-                      const selectedChildren = childKeys.filter(k => selectedEquipment.includes(k));
-
-                      return (
-                        <div key={cat.id}>
-                          <button
-                            onClick={() => toggleCategory(cat.id)}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium border transition-all ${
-                              selectedChildren.length > 0
-                                ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
-                                : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
-                            }`}
-                          >
-                            {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
-                            <span className="flex-grow text-left">{cat.label}</span>
-                            {selectedChildren.length > 0 && (
-                              <span className="text-[10px] font-bold bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full">
-                                {selectedChildren.length}
-                              </span>
-                            )}
-                            <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                          </button>
-
-                          {isExpanded && (
-                            <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-slate-100 pl-3">
-                              {cat.children!.map(child => {
-                                const active = selectedEquipment.includes(child.id);
-                                return (
-                                  <button
-                                    key={child.id}
-                                    onClick={() => toggleEquipment(child.id)}
-                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                                      active
-                                        ? 'bg-indigo-50 text-indigo-700'
-                                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
-                                    }`}
-                                  >
-                                    <span className="flex-grow text-left">{child.label}</span>
-                                    {active && <Check className="w-3.5 h-3.5 text-indigo-500" />}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </Section>
-
-                {/* Risk level */}
-                <Section label="Exposition aux risques" icon={<AlertTriangle className="w-3.5 h-3.5" />}>
-                  <div className="flex flex-wrap gap-2">
-                    {(Object.entries(RISK_LEVELS) as [RiskLevel, { label: string; description: string; color: string }][]).map(([key, { label, description, color }]) => (
-                      <ToggleButton
-                        key={key}
-                        active={riskLevel === key}
-                        onClick={() => update({ riskLevel: riskLevel === key ? undefined : key as RiskLevel })}
-                        activeClass={color}
-                      >
-                        {label}
-                        <span className="text-[10px] font-normal opacity-70">{description}</span>
-                      </ToggleButton>
-                    ))}
-                  </div>
-                </Section>
-
-                {/* Air quality */}
-                <Section label="Qualité de l'air" icon={<Wind className="w-3.5 h-3.5" />}>
-                  <div className="flex flex-wrap gap-2">
-                    {(Object.entries(AIR_QUALITY_LEVELS) as [AirQuality, { label: string; description: string; color: string }][]).map(([key, { label, description, color }]) => (
-                      <ToggleButton
-                        key={key}
-                        active={airQuality === key}
-                        onClick={() => update({ airQuality: airQuality === key ? undefined : key as AirQuality })}
-                        activeClass={color}
-                      >
-                        {label}
-                        <span className="text-[10px] font-normal opacity-70">{description}</span>
-                      </ToggleButton>
-                    ))}
-                  </div>
-                </Section>
-              </div>
-
-              {/* ── Column 3: Geography & Size ── */}
-              <div className="space-y-6">
-                {/* Geographical tags */}
-                <Section label="Cadre géographique">
-                  <div className="grid grid-cols-1 gap-2">
-                    {(Object.entries(GEO_TAGS) as [GeoTag, { label: string; description: string; color: string }][]).map(([key, { label, description, color }]) => (
-                      <ToggleButton
-                        key={key}
-                        active={selectedGeoTags.includes(key)}
-                        onClick={() => toggleGeoTag(key)}
-                        activeClass={color}
-                        className="justify-start"
-                      >
-                        {GEO_TAG_ICONS[key]}
-                        <span>{label}</span>
-                        <span className="text-[10px] font-normal opacity-70 ml-auto">{description}</span>
-                      </ToggleButton>
-                    ))}
-                  </div>
-                </Section>
-
-                {/* Prix au m² */}
-                <Section label="Prix au m²" icon={<Euro className="w-3.5 h-3.5" />}>
-                  <div className="grid grid-cols-2 gap-2">
                     {PRIX_M2_RANGES.map(({ key, label }) => (
-                      <ToggleButton
+                      <Chip
                         key={key}
                         active={prixM2Max === key}
                         onClick={() => update({ prixM2Max: prixM2Max === key ? undefined : key })}
                         activeClass="bg-amber-50 border-amber-300 text-amber-700"
-                        className="justify-center"
                       >
                         {label}
-                      </ToggleButton>
+                      </Chip>
                     ))}
                   </div>
                 </Section>
-
-                {/* Population size */}
-                <Section label="Taille de commune" icon={<Users className="w-3.5 h-3.5" />}>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(Object.entries(POPULATION_SIZES) as [PopulationSize, { label: string; min: number; max: number }][]).map(([key, { label, max }]) => (
-                      <ToggleButton
-                        key={key}
-                        active={selectedSizes.includes(key)}
-                        onClick={() => toggleSize(key)}
-                        activeClass="bg-violet-50 border-violet-300 text-violet-700"
-                        className="justify-center"
-                      >
-                        {label}
-                        <span className="text-[10px] font-normal opacity-70">
-                          {max === Infinity ? '200k+' : max >= 1000 ? `<${max / 1000}k` : `<${max}`}
-                        </span>
-                      </ToggleButton>
-                    ))}
-                  </div>
-                </Section>
-              </div>
+              </CategoryBlock>
             </div>
           </div>
 
@@ -548,7 +568,8 @@ const Section: React.FC<{ label: string; icon?: React.ReactNode; children: React
   </div>
 );
 
-const ToggleButton: React.FC<{
+/** M3-style filter chip: pill shape, selected = fill + checkmark */
+const Chip: React.FC<{
   active: boolean;
   onClick: () => void;
   activeClass: string;
@@ -557,13 +578,15 @@ const ToggleButton: React.FC<{
   style?: React.CSSProperties;
 }> = ({ active, onClick, activeClass, children, className = '', style }) => (
   <button
+    type="button"
     onClick={onClick}
-    className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${
-      active ? activeClass : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'
+    className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold border transition-all ${
+      active ? activeClass : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
     } ${className}`}
     style={active ? style : undefined}
   >
     {children}
+    {active && <Check className="w-3.5 h-3.5 flex-shrink-0 ml-0.5" />}
   </button>
 );
 
