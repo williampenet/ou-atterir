@@ -178,15 +178,15 @@ export interface ClimateFamilyConfig {
 }
 
 export const CLIMATE_FAMILIES: ClimateFamilyConfig[] = [
-  { key: 'chaleur', label: 'Chaleur / habitabilité thermique', shortLabel: 'Chaleur', icon: 'Thermometer', headlineIndicator: 'Vagues de chaleur', headlineUnit: 'j/an', available: true },
-  { key: 'eau', label: 'Eau / sécheresse', shortLabel: 'Eau', icon: 'Droplets', headlineIndicator: 'Sol sec en été', headlineUnit: 'jours', available: true },
+  { key: 'temperatures', label: 'Températures extrêmes', shortLabel: 'Températures', icon: 'Thermometer', headlineIndicator: 'Jours très chauds', headlineUnit: 'j/an', available: true },
+  { key: 'eau', label: 'Eau / stress hydrique', shortLabel: 'Eau', icon: 'Droplets', headlineIndicator: 'Sol sec en été', headlineUnit: 'jours', available: true },
   { key: 'risques', label: 'Risques / événements extrêmes', shortLabel: 'Risques', icon: 'AlertTriangle', headlineIndicator: 'Risques répertoriés', headlineUnit: '', available: true },
   { key: 'air', label: 'Qualité de l\'air', shortLabel: 'Air', icon: 'Wind', headlineIndicator: 'PM2.5', headlineUnit: 'µg/m³', available: true },
   { key: 'sols', label: 'Pollution des sols', shortLabel: 'Sols', icon: 'Sprout', headlineIndicator: 'Données à venir', headlineUnit: '', available: false },
 ];
 
 export const DEFAULT_CLIMATE_WEIGHTS: ClimateWeights = {
-  chaleur: 50,
+  temperatures: 50,
   eau: 50,
   risques: 50,
   air: 50,

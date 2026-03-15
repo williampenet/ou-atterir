@@ -165,8 +165,8 @@ export interface EquipmentDetail {
 }
 
 export interface ClimateScores {
-  chaleur: number;      // 0-100, higher = more exposed
-  eau: number;           // 0-100
+  temperatures: number;  // 0-100, higher = more exposed (heat + cold extremes)
+  eau: number;           // 0-100 (drought, dry soil, rain scarcity)
   risques: number;       // 0-100
   air: number;           // 0-100
   sols: number | null;   // null until data available
@@ -174,14 +174,14 @@ export interface ClimateScores {
 }
 
 export interface ClimateWeights {
-  chaleur: number;   // 0-100
+  temperatures: number;   // 0-100
   eau: number;
   risques: number;
   air: number;
   sols: number;
 }
 
-export type ClimateFamilyKey = 'chaleur' | 'eau' | 'risques' | 'air' | 'sols';
+export type ClimateFamilyKey = 'temperatures' | 'eau' | 'risques' | 'air' | 'sols';
 
 export interface MapMarker {
   insee: string;

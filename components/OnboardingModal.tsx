@@ -10,7 +10,7 @@ const STEPS = [
   {
     icon: Compass,
     title: 'Tri par exposition climatique',
-    description: 'Les communes sont classées selon leur exposition au changement climatique (chaleur, eau, risques naturels, qualité de l\'air, sols). Les moins exposées apparaissent en premier.',
+    description: 'Les communes sont classées selon leur exposition au changement climatique (températures, eau, risques naturels, qualité de l\'air, sols). Les moins exposées apparaissent en premier.',
     color: 'bg-orange-100 text-orange-600',
   },
   {

@@ -555,7 +555,7 @@ export function resultToMapMarker(r: IdealResult): MapMarker {
 // --------------------------------------------------
 
 interface RpcClimateResultRow extends RpcResultRow {
-  score_chaleur: number;
+  score_temperatures: number;
   score_eau: number;
   score_risques: number;
   score_air: number;
@@ -567,7 +567,7 @@ function rpcClimateRowToResult(row: RpcClimateResultRow): IdealResult {
   return {
     ...rpcRowToResult(row),
     climateScores: {
-      chaleur: Number(row.score_chaleur),
+      temperatures: Number(row.score_temperatures),
       eau: Number(row.score_eau),
       risques: Number(row.score_risques),
       air: Number(row.score_air),
@@ -612,7 +612,7 @@ export const searchCommunesClimateInBounds = async (
 
 export function computeWeightedScore(scores: ClimateScores, weights: ClimateWeights): number {
   const families: { score: number; weight: number }[] = [
-    { score: scores.chaleur, weight: weights.chaleur },
+    { score: scores.temperatures, weight: weights.temperatures },
     { score: scores.eau, weight: weights.eau },
     { score: scores.risques, weight: weights.risques },
     { score: scores.air, weight: weights.air },

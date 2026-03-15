@@ -32,7 +32,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_risk_count_insee
 -- Conventions:
 --   - Higher score = MORE exposed (worse)
 --   - g4Ete (summer rain) is INVERTED: fewer rainy days = drier = higher rank
---   - S4 (cold waves) excluded from chaleur family (ambiguous, per UX spec)
+--   - S4 (cold waves) included in températures family (covers heat + cold extremes)
+--   - S3 (drought/VPD) attached to eau family (hydrological stress)
 --   - R2 (extreme precipitation) attached to risques only (not eau)
 --   - PM2.5 sourced from commune_air_quality
 --   - pct_nb_risques sourced from commune_risk_count
@@ -86,11 +87,11 @@ SELECT
 
   -- Family scores (mean of component percentiles)
   -- Note: pct_* columns are numeric, so numeric/integer stays numeric
-  -- Chaleur: s3, s1, s2, icu (S4 excluded per UX spec)
-  ROUND((r.pct_s3 + r.pct_s1 + r.pct_s2 + r.pct_icu) / 4, 1) AS score_chaleur,
+  -- Températures: s1, s2, s4, icu (heat + cold extremes)
+  ROUND((r.pct_s1 + r.pct_s2 + r.pct_s4 + r.pct_icu) / 4, 1) AS score_temperatures,
 
-  -- Eau: r5_ete (dry soil) + g4_ete inverted (fewer rain days)
-  ROUND((r.pct_r5_ete + r.pct_g4_ete_inv) / 2, 1) AS score_eau,
+  -- Eau: r5_ete (dry soil) + g4_ete inverted (fewer rain days) + s3 (drought/VPD)
+  ROUND((r.pct_r5_ete + r.pct_g4_ete_inv + r.pct_s3) / 3, 1) AS score_eau,
 
   -- Risques: r4 (wildfire) + r2 (extreme precip) + nb_risques
   ROUND((r.pct_r4 + r.pct_r2 + r.pct_nb_risques) / 3, 1) AS score_risques,
@@ -103,8 +104,8 @@ SELECT
 
   -- Global score: mean of 4 available families
   ROUND((
-    (r.pct_s3 + r.pct_s1 + r.pct_s2 + r.pct_icu) / 4 +
-    (r.pct_r5_ete + r.pct_g4_ete_inv) / 2 +
+    (r.pct_s1 + r.pct_s2 + r.pct_s4 + r.pct_icu) / 4 +
+    (r.pct_r5_ete + r.pct_g4_ete_inv + r.pct_s3) / 3 +
     (r.pct_r4 + r.pct_r2 + r.pct_nb_risques) / 3 +
     r.pct_pm25
   ) / 4, 1) AS score_global
@@ -161,7 +162,7 @@ RETURNS TABLE (
   latest_winner text,
   latest_year int,
   latest_score double precision,
-  score_chaleur numeric,
+  score_temperatures numeric,
   score_eau numeric,
   score_risques numeric,
   score_air numeric,
@@ -316,7 +317,7 @@ BEGIN
     classified.latest_winner,
     classified.latest_year,
     classified.latest_score,
-    COALESCE(ccs.score_chaleur, 50) AS score_chaleur,
+    COALESCE(ccs.score_temperatures, 50) AS score_temperatures,
     COALESCE(ccs.score_eau, 50) AS score_eau,
     COALESCE(ccs.score_risques, 50) AS score_risques,
     COALESCE(ccs.score_air, 50) AS score_air,

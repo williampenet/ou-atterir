@@ -517,12 +517,12 @@ const AboutPage: React.FC = () => (
             </thead>
             <tbody className="divide-y divide-slate-100">
               <tr>
-                <td className="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">🌡️ Chaleur</td>
-                <td className="px-4 py-3 text-slate-500">Vagues de chaleur (S3), jours très chauds ≥ 35 °C (S1), nuits chaudes (S2), îlot de chaleur urbain (ICU)</td>
+                <td className="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">🌡️ Températures</td>
+                <td className="px-4 py-3 text-slate-500">Jours très chauds ≥ 35 °C (S1), nuits chaudes (S2), vagues de froid (S4), îlot de chaleur urbain (ICU)</td>
               </tr>
               <tr>
                 <td className="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">💧 Eau</td>
-                <td className="px-4 py-3 text-slate-500">Sol sec en été (R5), raréfaction des jours de pluie estivaux (G4 — inversé)</td>
+                <td className="px-4 py-3 text-slate-500">Sécheresse atmosphérique (S3), sol sec en été (R5), raréfaction des jours de pluie estivaux (G4 — inversé)</td>
               </tr>
               <tr>
                 <td className="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">⚠️ Risques</td>
