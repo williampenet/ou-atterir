@@ -505,7 +505,7 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
         onClick={onClose}
       />
 
-      <div className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[540px] md:inset-0 md:w-auto bg-white shadow-2xl flex flex-col animate-slide-in-right">
+      <div className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[540px] md:w-[720px] bg-white shadow-2xl flex flex-col animate-slide-in-right">
         {/* Header bar */}
         <div className="flex items-center px-6 md:px-10 py-3 border-b border-slate-100 flex-shrink-0 gap-3">
           <div className="flex flex-col min-w-0 flex-1">
