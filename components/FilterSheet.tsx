@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { PoliticalBloc, SearchFilters, MatchLevel, EquipmentFilterKey, PopulationSize, RiskLevel, GeoTag, AirQuality, HeatWaveLevel, TransportMode } from '../types';
-import { BLOC_COLORS, EQUIPMENT_CATEGORIES, POPULATION_SIZES, RISK_LEVELS, GEO_TAGS, PRIX_M2_RANGES, AIR_QUALITY_LEVELS, HEAT_WAVE_LEVELS, TRANSPORT_MODES, TRAVEL_DURATIONS, formatDepartments, Department } from '../constants';
+import { PoliticalBloc, SearchFilters, MatchLevel, EquipmentFilterKey, PopulationSize, GeoTag, TransportMode } from '../types';
+import { BLOC_COLORS, EQUIPMENT_CATEGORIES, POPULATION_SIZES, GEO_TAGS, PRIX_M2_RANGES, TRANSPORT_MODES, TRAVEL_DURATIONS, formatDepartments, Department } from '../constants';
 import { getDepartments } from '../services/communeService';
 import { computeIsochroneInsees } from '../services/isochroneService';
 import { GeocodingResult } from '../services/geocodingService';
@@ -8,16 +8,15 @@ import AddressAutocomplete from './AddressAutocomplete';
 import {
   X, SlidersHorizontal, Shield, Activity,
   ShoppingBag, GraduationCap, Heart, Train, Dumbbell,
-  Users, AlertTriangle, ChevronDown, Check,
-  Waves, Mountain, TreePine, Euro, Wind, Flame,
+  Users, ChevronDown, Check,
+  Waves, Mountain, TreePine, Euro,
   Navigation, Bike, Car, Clock, Loader2, TrainFront, Info,
-  MapPin, Leaf, Store, Scale,
+  MapPin, Store, Scale,
 } from 'lucide-react';
 
 /** Order and labels for filter categories (M3-style grouped filters) */
 const FILTER_CATEGORIES = [
   { id: 'localisation', label: 'Localisation', icon: MapPin },
-  { id: 'environnement', label: 'Environnement et risques', icon: Leaf },
   { id: 'services', label: 'Services et équipements', icon: Store },
   { id: 'politique', label: 'Politique', icon: Scale },
   { id: 'accessibilite', label: 'Accessibilité', icon: Navigation },
@@ -30,6 +29,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   resultCount?: number;
+  desktopMode?: boolean;
 }
 
 const BLOC_OPTIONS = [
@@ -71,7 +71,7 @@ const CategoryBlock: React.FC<{
   </div>
 );
 
-const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose, resultCount }) => {
+const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose, resultCount, desktopMode }) => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [isochroneLoading, setIsochroneLoading] = useState(false);
@@ -81,11 +81,8 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
   const matchLevel = (filters.matchLevel as string) ?? '';
   const selectedEquipment = filters.equipmentFilters ?? [];
   const selectedSizes = filters.populationSizes ?? [];
-  const riskLevel = (filters.riskLevel as string) ?? '';
   const selectedGeoTags = filters.geoTags ?? [];
   const prixM2Max = filters.prixM2Max;
-  const airQuality = (filters.airQuality as string) ?? '';
-  const heatWave = (filters.heatWave as string) ?? '';
   const travelFilter = filters.travelFilter;
 
   useEffect(() => {
@@ -189,7 +186,7 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
   };
 
   const activeCount =
-    [department, bloc, matchLevel, riskLevel, prixM2Max, airQuality, heatWave].filter(Boolean).length +
+    [department, bloc, matchLevel, prixM2Max].filter(Boolean).length +
     selectedEquipment.length +
     selectedSizes.length +
     selectedGeoTags.length +
@@ -246,8 +243,8 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
           <div className="flex-grow overflow-y-auto px-5 sm:px-8 py-6">
             <div>
 
-              {/* 1. Localisation */}
-              <CategoryBlock title={FILTER_CATEGORIES[0].label} icon={FILTER_CATEGORIES[0].icon} isLast={false}>
+              {/* 1. Localisation (mobile only when desktopMode) */}
+              {!desktopMode && <CategoryBlock title={FILTER_CATEGORIES[0].label} icon={FILTER_CATEGORIES[0].icon} isLast={false}>
                 <Section label="Département">
                   <select
                     value={department}
@@ -290,59 +287,10 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
                     ))}
                   </div>
                 </Section>
-              </CategoryBlock>
+              </CategoryBlock>}
 
-              {/* 2. Environnement et risques */}
-              <CategoryBlock title={FILTER_CATEGORIES[1].label} icon={FILTER_CATEGORIES[1].icon} isLast={false}>
-                <Section label="Exposition aux risques" icon={<AlertTriangle className="w-3.5 h-3.5" />}>
-                  <div className="flex flex-wrap gap-2">
-                    {(Object.entries(RISK_LEVELS) as [RiskLevel, { label: string; description: string; color: string }][]).map(([key, { label, description, color }]) => (
-                      <Chip
-                        key={key}
-                        active={riskLevel === key}
-                        onClick={() => update({ riskLevel: riskLevel === key ? undefined : key as RiskLevel })}
-                        activeClass={color}
-                      >
-                        {label}
-                        <span className="text-[10px] font-normal opacity-70">{description}</span>
-                      </Chip>
-                    ))}
-                  </div>
-                </Section>
-                <Section label="Qualité de l'air" icon={<Wind className="w-3.5 h-3.5" />}>
-                  <div className="flex flex-wrap gap-2">
-                    {(Object.entries(AIR_QUALITY_LEVELS) as [AirQuality, { label: string; description: string; color: string }][]).map(([key, { label, description, color }]) => (
-                      <Chip
-                        key={key}
-                        active={airQuality === key}
-                        onClick={() => update({ airQuality: airQuality === key ? undefined : key as AirQuality })}
-                        activeClass={color}
-                      >
-                        {label}
-                        <span className="text-[10px] font-normal opacity-70">{description}</span>
-                      </Chip>
-                    ))}
-                  </div>
-                </Section>
-                <Section label="Vagues de chaleur en 2050" icon={<Flame className="w-3.5 h-3.5" />}>
-                  <div className="flex flex-wrap gap-2">
-                    {(Object.entries(HEAT_WAVE_LEVELS) as [HeatWaveLevel, { label: string; description: string; color: string }][]).map(([key, { label, description, color }]) => (
-                      <Chip
-                        key={key}
-                        active={heatWave === key}
-                        onClick={() => update({ heatWave: heatWave === key ? undefined : key as HeatWaveLevel })}
-                        activeClass={color}
-                      >
-                        {label}
-                        <span className="text-[10px] font-normal opacity-70">{description}</span>
-                      </Chip>
-                    ))}
-                  </div>
-                </Section>
-              </CategoryBlock>
-
-              {/* 3. Services et équipements */}
-              <CategoryBlock title={FILTER_CATEGORIES[2].label} icon={FILTER_CATEGORIES[2].icon} isLast={false}>
+              {/* 2. Services et équipements */}
+              {!desktopMode && <CategoryBlock title={FILTER_CATEGORIES[1].label} icon={FILTER_CATEGORIES[1].icon} isLast={false}>
                 <Section label="Équipements">
                   <div className="space-y-1.5">
                     {EQUIPMENT_CATEGORIES.map(cat => {
@@ -417,10 +365,10 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
                     })}
                   </div>
                 </Section>
-              </CategoryBlock>
+              </CategoryBlock>}
 
-              {/* 4. Politique */}
-              <CategoryBlock title={FILTER_CATEGORIES[3].label} icon={FILTER_CATEGORIES[3].icon} isLast={false}>
+              {/* 3. Politique */}
+              {!desktopMode && <CategoryBlock title={FILTER_CATEGORIES[2].label} icon={FILTER_CATEGORIES[2].icon} isLast={false}>
                 <Section label="Tendance politique">
                   <div className="flex flex-wrap gap-2">
                     {BLOC_OPTIONS.map(o => (
@@ -455,10 +403,10 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
                     </Chip>
                   </div>
                 </Section>
-              </CategoryBlock>
+              </CategoryBlock>}
 
-              {/* 5. Accessibilité */}
-              <CategoryBlock title={FILTER_CATEGORIES[4].label} icon={FILTER_CATEGORIES[4].icon} isLast={false}>
+              {/* 4. Accessibilité */}
+              <CategoryBlock title={FILTER_CATEGORIES[3].label} icon={FILTER_CATEGORIES[3].icon} isLast={desktopMode}>
                 <Section label="Temps de trajet">
                   <div className="space-y-3">
                     <AddressAutocomplete
@@ -536,8 +484,8 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
                 </Section>
               </CategoryBlock>
 
-              {/* 6. Immobilier */}
-              <CategoryBlock title={FILTER_CATEGORIES[5].label} icon={FILTER_CATEGORIES[5].icon} isLast={true}>
+              {/* 5. Immobilier */}
+              {!desktopMode && <CategoryBlock title={FILTER_CATEGORIES[4].label} icon={FILTER_CATEGORIES[4].icon} isLast={true}>
                 <Section label="Prix au m²">
                   <div className="flex flex-wrap gap-2">
                     {PRIX_M2_RANGES.map(({ key, label }) => (
@@ -552,7 +500,7 @@ const FilterSheet: React.FC<Props> = ({ filters, onFiltersChange, open, onClose,
                     ))}
                   </div>
                 </Section>
-              </CategoryBlock>
+              </CategoryBlock>}
             </div>
           </div>
 

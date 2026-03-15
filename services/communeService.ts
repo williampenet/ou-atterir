@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Commune, ElectionResult, ElectionType, StabilityLevel, IdealResult, PaginatedResults, SearchFilters, MatchLevel, EquipmentSummary, EquipmentDetail, EquipmentDomain, RiskDetail, DvfData, DvfYearStat, MarketTension, MapMarker, MapBounds, ClimatData, ClimatProjection } from '../types';
+import { Commune, ElectionResult, ElectionType, StabilityLevel, IdealResult, PaginatedResults, SearchFilters, MatchLevel, EquipmentSummary, EquipmentDetail, EquipmentDomain, RiskDetail, DvfData, DvfYearStat, MarketTension, MapMarker, MapBounds, ClimatData, ClimatProjection, ClimateScores, ClimateWeights } from '../types';
 
 // --------------------------------------------------
 // Row types (database shape)
@@ -544,7 +544,89 @@ export function resultToMapMarker(r: IdealResult): MapMarker {
     lng: r.commune.coordinates[1],
     latestBloc: r.latestBloc ?? null,
     matchLevel: r.matchLevel,
+    climateScore: r.climateScores?.global,
   };
+}
+
+// --------------------------------------------------
+// API: Climate-aware search (used after "landing")
+// Returns results with per-family climate scores,
+// ordered by score_global ASC (least exposed first).
+// --------------------------------------------------
+
+interface RpcClimateResultRow extends RpcResultRow {
+  score_chaleur: number;
+  score_eau: number;
+  score_risques: number;
+  score_air: number;
+  score_sols: number | null;
+  score_global: number;
+}
+
+function rpcClimateRowToResult(row: RpcClimateResultRow): IdealResult {
+  return {
+    ...rpcRowToResult(row),
+    climateScores: {
+      chaleur: Number(row.score_chaleur),
+      eau: Number(row.score_eau),
+      risques: Number(row.score_risques),
+      air: Number(row.score_air),
+      sols: row.score_sols != null ? Number(row.score_sols) : null,
+      global: Number(row.score_global),
+    },
+  };
+}
+
+export const searchCommunesClimateInBounds = async (
+  filters: SearchFilters,
+  bounds: MapBounds | null,
+  limit = 500
+): Promise<BoundsSearchResult> => {
+  const rpcParams = buildRpcParams(filters, limit, bounds);
+  const countRpcParams = { ...buildRpcParams(filters, 0, bounds) };
+  delete countRpcParams.page_limit;
+  delete countRpcParams.page_offset;
+
+  const [resultsRes, countRes] = await Promise.all([
+    supabase.rpc('search_communes_climate', rpcParams),
+    supabase.rpc('count_communes', countRpcParams),
+  ]);
+
+  const total = (countRes.data as number) || 0;
+
+  if (resultsRes.error || !resultsRes.data) {
+    // Fallback: if climate RPC fails (not deployed yet), use standard search
+    console.warn('[searchCommunesClimateInBounds] Climate RPC failed, falling back to standard search:', resultsRes.error?.message);
+    return searchCommunesInBounds(filters, bounds, limit);
+  }
+
+  return {
+    results: ((resultsRes.data || []) as RpcClimateResultRow[]).map(rpcClimateRowToResult),
+    total,
+  };
+};
+
+// --------------------------------------------------
+// Helper: compute weighted climate score (client-side)
+// --------------------------------------------------
+
+export function computeWeightedScore(scores: ClimateScores, weights: ClimateWeights): number {
+  const families: { score: number; weight: number }[] = [
+    { score: scores.chaleur, weight: weights.chaleur },
+    { score: scores.eau, weight: weights.eau },
+    { score: scores.risques, weight: weights.risques },
+    { score: scores.air, weight: weights.air },
+  ];
+
+  // Include sols only if data available
+  if (scores.sols != null) {
+    families.push({ score: scores.sols, weight: weights.sols });
+  }
+
+  const totalWeight = families.reduce((sum, f) => sum + f.weight, 0);
+  if (totalWeight === 0) return scores.global;
+
+  return families.reduce((sum, f) => sum + f.score * f.weight, 0) / totalWeight;
 }
 
 // --------------------------------------------------

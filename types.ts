@@ -49,6 +49,7 @@ export interface IdealResult {
   latestWinner?: string;
   latestYear?: number;
   latestScore?: number;
+  climateScores?: ClimateScores;
 }
 
 export interface PaginatedResults<T> {
@@ -163,6 +164,25 @@ export interface EquipmentDetail {
   count: number;
 }
 
+export interface ClimateScores {
+  chaleur: number;      // 0-100, higher = more exposed
+  eau: number;           // 0-100
+  risques: number;       // 0-100
+  air: number;           // 0-100
+  sols: number | null;   // null until data available
+  global: number;        // 0-100
+}
+
+export interface ClimateWeights {
+  chaleur: number;   // 0-100
+  eau: number;
+  risques: number;
+  air: number;
+  sols: number;
+}
+
+export type ClimateFamilyKey = 'chaleur' | 'eau' | 'risques' | 'air' | 'sols';
+
 export interface MapMarker {
   insee: string;
   name: string;
@@ -171,6 +191,7 @@ export interface MapMarker {
   lng: number;
   latestBloc: string | null;
   matchLevel: MatchLevel | 'all';
+  climateScore?: number;
 }
 
 export interface MapBounds {

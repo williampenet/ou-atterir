@@ -1,7 +1,7 @@
 import React from 'react';
-import { Commune, IdealResult, PaginatedResults } from '../types';
-import { BLOC_COLORS } from '../constants';
-import { MapPin, Search, ChevronLeft, ChevronRight, Scale } from 'lucide-react';
+import { Commune, IdealResult, PaginatedResults, ClimateScores } from '../types';
+import { BLOC_COLORS, CLIMATE_FAMILIES, scoreBgColor } from '../constants';
+import { MapPin, Search, ChevronLeft, ChevronRight, Scale, Thermometer, Droplets, AlertTriangle, Wind, Sprout } from 'lucide-react';
 
 interface Props {
   results: PaginatedResults<IdealResult>;
@@ -10,9 +10,24 @@ interface Props {
   onPageChange: (page: number) => void;
   compareList: Commune[];
   onToggleCompare: (commune: Commune) => void;
+  climateActive?: boolean;
 }
 
-const ResultsList: React.FC<Props> = ({ results, onSelectCommune, selectedInsee, onPageChange, compareList, onToggleCompare }) => {
+const FAMILY_ICONS: Record<string, React.ElementType> = {
+  Thermometer,
+  Droplets,
+  AlertTriangle,
+  Wind,
+  Sprout,
+};
+
+function familyScoreColor(score: number): string {
+  if (score < 33) return 'bg-emerald-100 text-emerald-700';
+  if (score < 66) return 'bg-amber-100 text-amber-700';
+  return 'bg-red-100 text-red-700';
+}
+
+const ResultsList: React.FC<Props> = ({ results, onSelectCommune, selectedInsee, onPageChange, compareList, onToggleCompare, climateActive }) => {
   if (results.data.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-6 text-center bg-white rounded-2xl border border-slate-200 shadow-sm">
@@ -31,6 +46,7 @@ const ResultsList: React.FC<Props> = ({ results, onSelectCommune, selectedInsee,
         <p className="text-xs text-slate-500 font-medium">
           {results.total} commune{results.total > 1 ? 's' : ''}
           {totalPages > 1 && <span className="text-slate-400"> — page {results.page}/{totalPages}</span>}
+          {climateActive && <span className="text-indigo-500 ml-1">· trié par exposition climat</span>}
         </p>
       </div>
 
@@ -47,6 +63,7 @@ const ResultsList: React.FC<Props> = ({ results, onSelectCommune, selectedInsee,
               inCompare={inCompare}
               compareDisabled={compareFull}
               onToggleCompare={() => onToggleCompare(r.commune)}
+              climateActive={climateActive}
             />
           );
         })}
@@ -77,6 +94,43 @@ const ResultsList: React.FC<Props> = ({ results, onSelectCommune, selectedInsee,
   );
 };
 
+/* ─── Climate mini-badges ─── */
+
+const ClimateIndicators: React.FC<{ scores: ClimateScores }> = ({ scores }) => (
+  <div className="mt-2 flex items-center gap-1">
+    {/* Global score badge */}
+    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold border ${scoreBgColor(scores.global)}`}>
+      {Math.round(scores.global)}
+    </span>
+
+    <span className="text-slate-300 text-[10px] mx-0.5">|</span>
+
+    {/* Per-family mini icons */}
+    {CLIMATE_FAMILIES.map(family => {
+      const Icon = FAMILY_ICONS[family.icon];
+      const score = scores[family.key];
+      const isAvailable = family.available && score != null;
+
+      return (
+        <span
+          key={family.key}
+          className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-semibold ${
+            isAvailable
+              ? familyScoreColor(score as number)
+              : 'bg-slate-50 text-slate-300'
+          }`}
+          title={`${family.shortLabel}: ${isAvailable ? Math.round(score as number) + '/100' : 'N/A'}`}
+        >
+          {Icon && <Icon className="w-2.5 h-2.5" />}
+          {isAvailable ? Math.round(score as number) : '—'}
+        </span>
+      );
+    })}
+  </div>
+);
+
+/* ─── Result card ─── */
+
 interface ResultCardProps {
   result: IdealResult;
   isSelected: boolean;
@@ -84,10 +138,11 @@ interface ResultCardProps {
   inCompare: boolean;
   compareDisabled: boolean;
   onToggleCompare: () => void;
+  climateActive?: boolean;
 }
 
-const ResultCard: React.FC<ResultCardProps> = ({ result, isSelected, onClick, inCompare, compareDisabled, onToggleCompare }) => {
-  const { commune, matchLevel, latestNuanceLabel, latestBloc, latestWinner, latestYear, latestScore } = result;
+const ResultCard: React.FC<ResultCardProps> = ({ result, isSelected, onClick, inCompare, compareDisabled, onToggleCompare, climateActive }) => {
+  const { commune, latestNuanceLabel, latestBloc, latestWinner, latestYear, latestScore, climateScores } = result;
 
   const blocColor = latestBloc ? (BLOC_COLORS[latestBloc] || '#94a3b8') : '#94a3b8';
 
@@ -134,6 +189,9 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, isSelected, onClick, in
           </span>
         </div>
       )}
+
+      {/* Climate indicators (only when landed) */}
+      {climateActive && climateScores && <ClimateIndicators scores={climateScores} />}
     </button>
   );
 };

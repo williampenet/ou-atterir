@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { SlidersHorizontal, X, Scale, Menu, Loader2 } from 'lucide-react';
-import { searchCommunesInBounds, resultToMapMarker, getCommuneByInsee } from './services/communeService';
-import { Commune, IdealResult, PaginatedResults, SearchFilters, MapBounds } from './types';
+import { SlidersHorizontal, X, Scale, Menu, Loader2, Compass } from 'lucide-react';
+import { searchCommunesInBounds, searchCommunesClimateInBounds, resultToMapMarker, getCommuneByInsee, computeWeightedScore } from './services/communeService';
+import { Commune, IdealResult, PaginatedResults, SearchFilters, MapBounds, ClimateWeights } from './types';
+import { DEFAULT_CLIMATE_WEIGHTS } from './constants';
 import FilterSheet from './components/FilterSheet';
 import ResultsList from './components/ResultsList';
 import CommuneDrawer from './components/CommuneDrawer';
 import CompareView from './components/CompareView';
 import MapComponent from './components/MapComponent';
 import BottomSheet from './components/BottomSheet';
+import ClimateWeighting from './components/ClimateWeighting';
+import OnboardingModal from './components/OnboardingModal';
+import QuickFiltersBar from './components/QuickFiltersBar';
 
 type AppPage = 'explorer' | 'about';
 const PAGE_SIZE = 30;
@@ -26,11 +30,43 @@ const App: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [fitBoundsKey, setFitBoundsKey] = useState(0);
 
+  // ─── Climate toggle state (bidirectional ON/OFF) ───
+  const [climateActive, setClimateActive] = useState(() => localStorage.getItem('climateActive') === 'true');
+  const [climateWeights, setClimateWeights] = useState<ClimateWeights>(DEFAULT_CLIMATE_WEIGHTS);
+  const [weightingPanelOpen, setWeightingPanelOpen] = useState(false);
+
+  const toggleClimate = useCallback(() => {
+    setClimateActive(prev => {
+      const next = !prev;
+      localStorage.setItem('climateActive', String(next));
+      return next;
+    });
+  }, []);
+
+  // ─── Onboarding modal (first visit only) ───
+  const [showOnboarding, setShowOnboarding] = useState(
+    () => localStorage.getItem('hasSeenOnboarding') !== 'true'
+  );
+
+  const handleDismissOnboarding = useCallback(() => {
+    setShowOnboarding(false);
+    localStorage.setItem('hasSeenOnboarding', 'true');
+  }, []);
+
   const filtersRef = useRef(filters);
+  const climateActiveRef = useRef(climateActive);
   const searchIdRef = useRef(0);
   const skipNextBoundsSearch = useRef(false);
 
   const filtersKey = JSON.stringify(filters);
+
+  useEffect(() => { climateActiveRef.current = climateActive; }, [climateActive]);
+
+  const doSearch = useCallback((f: SearchFilters, bounds: MapBounds | null, landed: boolean) => {
+    return landed
+      ? searchCommunesClimateInBounds(f, bounds)
+      : searchCommunesInBounds(f, bounds);
+  }, []);
 
   useEffect(() => {
     filtersRef.current = filters;
@@ -40,7 +76,7 @@ const App: React.FC = () => {
     const id = ++searchIdRef.current;
     setLoading(true);
 
-    searchCommunesInBounds(filters, null).then(({ results, total }) => {
+    doSearch(filters, null, climateActive).then(({ results, total }) => {
       if (id !== searchIdRef.current) return;
       setAllResults(results);
       setTotalCount(total);
@@ -52,7 +88,7 @@ const App: React.FC = () => {
       setTotalCount(0);
       setLoading(false);
     });
-  }, [filtersKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filtersKey, climateActive, doSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleBoundsChange = useCallback((bounds: MapBounds) => {
     if (skipNextBoundsSearch.current) {
@@ -64,7 +100,7 @@ const App: React.FC = () => {
     const id = ++searchIdRef.current;
     setLoading(true);
 
-    searchCommunesInBounds(filtersRef.current, bounds).then(({ results, total }) => {
+    doSearch(filtersRef.current, bounds, climateActiveRef.current).then(({ results, total }) => {
       if (id !== searchIdRef.current) return;
       setAllResults(results);
       setTotalCount(total);
@@ -75,17 +111,27 @@ const App: React.FC = () => {
       setTotalCount(0);
       setLoading(false);
     });
-  }, []);
+  }, [doSearch]);
 
-  const markers = useMemo(() => allResults.map(resultToMapMarker), [allResults]);
+  // Re-sort client-side when weights change (instant, no server call)
+  const sortedResults = useMemo(() => {
+    if (!climateActive) return allResults;
+    return [...allResults].sort((a, b) => {
+      const sa = a.climateScores ? computeWeightedScore(a.climateScores, climateWeights) : 50;
+      const sb = b.climateScores ? computeWeightedScore(b.climateScores, climateWeights) : 50;
+      return sa - sb;
+    });
+  }, [allResults, climateActive, climateWeights]);
+
+  const markers = useMemo(() => sortedResults.map(resultToMapMarker), [sortedResults]);
 
   const paginatedResults: PaginatedResults<IdealResult> = useMemo(() => ({
-    data: allResults.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    data: sortedResults.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
     total: totalCount,
     page,
     pageSize: PAGE_SIZE,
-    hasMore: page * PAGE_SIZE < allResults.length,
-  }), [allResults, page, totalCount]);
+    hasMore: page * PAGE_SIZE < sortedResults.length,
+  }), [sortedResults, page, totalCount]);
 
   const handlePageChange = (p: number) => setPage(p);
 
@@ -108,7 +154,7 @@ const App: React.FC = () => {
   };
 
   const activeFilterCount =
-    [filters.department, filters.bloc, filters.matchLevel, filters.riskLevel, filters.heatWave].filter(Boolean).length +
+    [filters.department, filters.bloc, filters.matchLevel, filters.prixM2Max].filter(Boolean).length +
     (filters.equipmentFilters?.length ?? 0) +
     (filters.populationSizes?.length ?? 0) +
     (filters.geoTags?.length ?? 0) +
@@ -132,6 +178,12 @@ const App: React.FC = () => {
             <h1 className="text-lg font-extrabold text-slate-900 tracking-tight">
               Ou Atterir
             </h1>
+            {climateActive && (
+              <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-600 border border-red-200">
+                <Compass className="w-2.5 h-2.5" />
+                Climat
+              </span>
+            )}
           </div>
 
           {/* Desktop nav */}
@@ -202,35 +254,32 @@ const App: React.FC = () => {
       {/* ─── Page content ─── */}
       {activePage === 'explorer' ? (
         <>
-          {/* Desktop: info bar + filters button */}
-          <div className="hidden sm:flex items-center justify-between max-w-[1400px] mx-auto w-full px-4 py-2.5 bg-slate-100">
-            <p className="text-sm text-slate-500 font-medium">
-              {loading ? (
-                <span className="inline-flex items-center gap-2">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Recherche...
-                </span>
-              ) : (
-                <>
-                {totalCount > allResults.length
-                  ? `${allResults.length} communes affichées sur ${totalCount.toLocaleString('fr-FR')}`
-                  : `${totalCount.toLocaleString('fr-FR')} commune${totalCount !== 1 ? 's' : ''}`
-                } dans la zone
-              </>
+          {/* Desktop: quick filters bar */}
+          <div className="hidden sm:flex items-center max-w-[1400px] mx-auto w-full px-4 py-2 bg-slate-100 gap-2">
+            <QuickFiltersBar filters={filters} onFiltersChange={setFilters} climateActive={climateActive} onToggleClimate={toggleClimate} />
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {climateActive && (
+                <button
+                  onClick={() => setWeightingPanelOpen(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600 active:scale-95 transition-all shadow-sm"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  Pondération
+                </button>
               )}
-            </p>
-            <button
-              onClick={() => setFiltersOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 active:scale-95 transition-all shadow-sm"
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-              Filtres
-              {activeFilterCount > 0 && (
-                <span className="text-[10px] font-bold bg-white/20 px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
+              <button
+                onClick={() => setFiltersOpen(true)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 active:scale-95 transition-all shadow-sm"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                + Filtres
+                {activeFilterCount > 0 && (
+                  <span className="text-[10px] font-bold bg-white/20 px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Desktop: list + map side by side */}
@@ -251,6 +300,7 @@ const App: React.FC = () => {
                     onPageChange={handlePageChange}
                     compareList={compareList}
                     onToggleCompare={toggleCompare}
+                    climateActive={climateActive}
                   />
                 )}
               </div>
@@ -265,6 +315,7 @@ const App: React.FC = () => {
                 onBoundsChange={handleBoundsChange}
                 fitBoundsKey={fitBoundsKey}
                 isVisible={activePage === 'explorer'}
+                climateActive={climateActive}
               />
             </div>
           </div>
@@ -278,6 +329,7 @@ const App: React.FC = () => {
               onBoundsChange={handleBoundsChange}
               fitBoundsKey={fitBoundsKey}
               isVisible={activePage === 'explorer'}
+              climateActive={climateActive}
             />
 
             <BottomSheet communeCount={totalCount}>
@@ -294,17 +346,44 @@ const App: React.FC = () => {
                   onPageChange={handlePageChange}
                   compareList={compareList}
                   onToggleCompare={toggleCompare}
+                  climateActive={climateActive}
                 />
               )}
             </BottomSheet>
 
-            {/* Mobile filters floating button */}
-            <div className={`fixed left-1/2 -translate-x-1/2 z-40 ${compareList.length > 0 ? 'bottom-20' : 'bottom-5'}`}>
+            {/* Mobile: bottom bar with Climat toggle + Pondération + Filtres */}
+            <div className={`fixed left-0 right-0 z-40 flex items-center justify-center gap-2 px-3 py-2 ${compareList.length > 0 ? 'bottom-16' : 'bottom-3'}`}>
+              {/* Climate toggle */}
+              <button
+                onClick={toggleClimate}
+                className={`flex items-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs font-bold shadow-lg transition-all active:scale-95 ${
+                  climateActive
+                    ? 'bg-red-50 border border-red-300 text-red-700 shadow-red-200/50'
+                    : 'bg-white border border-slate-200 text-slate-500 shadow-slate-200/50'
+                }`}
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span>Climat</span>
+                <span>{climateActive ? '✓' : '✗'}</span>
+              </button>
+
+              {/* Pondération (only when climate active) */}
+              {climateActive && (
+                <button
+                  onClick={() => setWeightingPanelOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs font-bold bg-amber-500 text-white shadow-lg shadow-amber-500/30 hover:bg-amber-600 active:scale-95 transition-all"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  Pondération
+                </button>
+              )}
+
+              {/* Filtres */}
               <button
                 onClick={() => setFiltersOpen(true)}
-                className="flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition-all"
+                className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition-all"
               >
-                <SlidersHorizontal className="w-4 h-4" />
+                <SlidersHorizontal className="w-3.5 h-3.5" />
                 Filtres
                 {activeFilterCount > 0 && (
                   <span className="text-[10px] font-bold bg-white/20 px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
@@ -365,8 +444,16 @@ const App: React.FC = () => {
         <CommuneDrawer
           commune={selectedCommune}
           onClose={() => setSelectedCommune(null)}
+          climateActive={climateActive}
         />
       )}
+
+      <ClimateWeighting
+        open={weightingPanelOpen}
+        onClose={() => setWeightingPanelOpen(false)}
+        weights={climateWeights}
+        onWeightsChange={setClimateWeights}
+      />
 
       {compareOpen && compareList.length === 2 && (
         <CompareView
@@ -374,6 +461,8 @@ const App: React.FC = () => {
           onClose={() => setCompareOpen(false)}
         />
       )}
+
+      <OnboardingModal open={showOnboarding} onClose={handleDismissOnboarding} />
     </div>
   );
 };

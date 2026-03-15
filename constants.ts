@@ -1,4 +1,4 @@
-import { PoliticalBloc, StabilityLevel, EquipmentDomain, EquipmentCategory, PopulationSize, RiskLevel, GeoTag, MarketTension, AirQuality, HeatWaveLevel, TransportMode } from './types';
+import { PoliticalBloc, StabilityLevel, EquipmentDomain, EquipmentCategory, PopulationSize, RiskLevel, GeoTag, MarketTension, AirQuality, HeatWaveLevel, TransportMode, ClimateFamilyKey, ClimateWeights } from './types';
 
 export const BLOC_COLORS: Record<string, string> = {
   [PoliticalBloc.EXTRÊME_GAUCHE]: '#b91c1c',
@@ -162,3 +162,51 @@ export const PRIX_M2_RANGES = [
   { key: 5000, label: '< 5 000 €/m²' },
   { key: 99999, label: '> 5 000 €/m²' },
 ];
+
+// --------------------------------------------------
+// Climate families configuration
+// --------------------------------------------------
+
+export interface ClimateFamilyConfig {
+  key: ClimateFamilyKey;
+  label: string;
+  shortLabel: string;
+  icon: string;           // Lucide icon name
+  headlineIndicator: string;
+  headlineUnit: string;
+  available: boolean;
+}
+
+export const CLIMATE_FAMILIES: ClimateFamilyConfig[] = [
+  { key: 'chaleur', label: 'Chaleur / habitabilité thermique', shortLabel: 'Chaleur', icon: 'Thermometer', headlineIndicator: 'Vagues de chaleur', headlineUnit: 'j/an', available: true },
+  { key: 'eau', label: 'Eau / sécheresse', shortLabel: 'Eau', icon: 'Droplets', headlineIndicator: 'Sol sec en été', headlineUnit: 'jours', available: true },
+  { key: 'risques', label: 'Risques / événements extrêmes', shortLabel: 'Risques', icon: 'AlertTriangle', headlineIndicator: 'Risques répertoriés', headlineUnit: '', available: true },
+  { key: 'air', label: 'Qualité de l\'air', shortLabel: 'Air', icon: 'Wind', headlineIndicator: 'PM2.5', headlineUnit: 'µg/m³', available: true },
+  { key: 'sols', label: 'Pollution des sols', shortLabel: 'Sols', icon: 'Sprout', headlineIndicator: 'Données à venir', headlineUnit: '', available: false },
+];
+
+export const DEFAULT_CLIMATE_WEIGHTS: ClimateWeights = {
+  chaleur: 50,
+  eau: 50,
+  risques: 50,
+  air: 50,
+  sols: 50,
+};
+
+export function scoreColor(score: number): string {
+  if (score < 33) return 'text-emerald-600';
+  if (score < 66) return 'text-amber-500';
+  return 'text-red-500';
+}
+
+export function scoreBgColor(score: number): string {
+  if (score < 33) return 'bg-emerald-100 border-emerald-300 text-emerald-700';
+  if (score < 66) return 'bg-amber-100 border-amber-300 text-amber-700';
+  return 'bg-red-100 border-red-300 text-red-700';
+}
+
+export function scoreMapColor(score: number): string {
+  if (score < 33) return '#10b981';
+  if (score < 66) return '#f59e0b';
+  return '#ef4444';
+}

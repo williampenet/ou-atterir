@@ -13,6 +13,7 @@ import {
 interface Props {
   commune: Commune;
   onClose: () => void;
+  climateActive?: boolean;
 }
 
 const DOMAIN_ICONS: Record<EquipmentDomain, React.FC<{ className?: string }>> = {
@@ -215,7 +216,7 @@ const ClimatSection: React.FC<{ data: ClimatData }> = ({ data }) => {
   );
 };
 
-const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
+const CommuneDrawer: React.FC<Props> = ({ commune, onClose, climateActive }) => {
   const [fullCommune, setFullCommune] = useState<Commune | null>(null);
   const [loading, setLoading] = useState(true);
   const [eqDetails, setEqDetails] = useState<EquipmentDetail[]>([]);
@@ -371,7 +372,14 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose }) => {
                   )}
                 </CategoryBlock>
 
-                {climatData && <ClimatSection data={climatData} />}
+                {climateActive && climatData && <ClimatSection data={climatData} />}
+                {!climateActive && (
+                  <div className="py-4 px-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                    <p className="text-xs text-slate-400">
+                      Activez les données climatiques pour voir les projections.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Column 2: Services + Immobilier */}
