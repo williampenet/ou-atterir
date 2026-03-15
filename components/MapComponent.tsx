@@ -32,6 +32,7 @@ interface Props {
   fitBoundsKey?: number;
   isVisible?: boolean;
   climateActive?: boolean;
+  drawerOpen?: boolean;
 }
 
 const MapComponent: React.FC<Props> = ({
@@ -42,6 +43,7 @@ const MapComponent: React.FC<Props> = ({
   fitBoundsKey = 0,
   isVisible,
   climateActive,
+  drawerOpen,
 }) => {
   const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -86,7 +88,7 @@ const MapComponent: React.FC<Props> = ({
         />
       </MapContainer>
 
-      {climateActive && (
+      {climateActive && !drawerOpen && (
         <div className="absolute top-3 left-3 z-[400] bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm border border-slate-200 flex items-center gap-2 text-[10px] text-slate-600 font-medium">
           <span>Exposition :</span>
           <span className="inline-flex items-center gap-1">

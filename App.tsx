@@ -316,6 +316,7 @@ const App: React.FC = () => {
                 fitBoundsKey={fitBoundsKey}
                 isVisible={activePage === 'explorer'}
                 climateActive={climateActive}
+                drawerOpen={!!selectedCommune}
               />
             </div>
           </div>
@@ -330,6 +331,7 @@ const App: React.FC = () => {
               fitBoundsKey={fitBoundsKey}
               isVisible={activePage === 'explorer'}
               climateActive={climateActive}
+              drawerOpen={!!selectedCommune}
             />
 
             <BottomSheet communeCount={totalCount}>

@@ -292,17 +292,17 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose, climateActive }) => 
 
       <div className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[540px] md:inset-0 md:w-auto bg-white shadow-2xl flex flex-col animate-slide-in-right">
         {/* Header bar with commune identity */}
-        <div className="flex items-center justify-between px-6 md:px-10 py-3 border-b border-slate-100 flex-shrink-0 gap-4">
-          <div className="flex items-baseline gap-3 min-w-0">
-            <h2 className="text-lg font-extrabold text-slate-900 tracking-tight whitespace-nowrap">{displayCommune.name}</h2>
-            <div className="flex items-center gap-3 text-slate-400 text-sm whitespace-nowrap">
-              <span className="inline-flex items-center">
-                <MapPin className="w-3 h-3 mr-1" />
+        <div className="flex items-center px-6 md:px-10 py-3 border-b border-slate-100 flex-shrink-0 gap-3">
+          <div className="flex flex-col min-w-0 flex-1">
+            <h2 className="text-lg font-extrabold text-slate-900 tracking-tight truncate">{displayCommune.name}</h2>
+            <div className="flex items-center gap-3 text-slate-400 text-xs flex-wrap">
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="w-3 h-3 flex-shrink-0" />
                 {displayCommune.zipcode} — {displayCommune.department}
               </span>
               {displayCommune.population != null && (
-                <span className="inline-flex items-center">
-                  <Users className="w-3 h-3 mr-1" />
+                <span className="inline-flex items-center gap-1">
+                  <Users className="w-3 h-3 flex-shrink-0" />
                   {displayCommune.population.toLocaleString('fr-FR')} hab.
                 </span>
               )}
@@ -310,7 +310,7 @@ const CommuneDrawer: React.FC<Props> = ({ commune, onClose, climateActive }) => 
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0"
+            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0 self-start mt-0.5"
           >
             <X className="w-5 h-5" />
           </button>
