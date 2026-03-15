@@ -87,8 +87,8 @@ const MapComponent: React.FC<Props> = ({
       </MapContainer>
 
       {climateActive && (
-        <div className="absolute bottom-3 left-3 z-[400] bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm border border-slate-200 flex items-center gap-2 text-[10px] text-slate-600 font-medium">
-          <span>Exposition climat :</span>
+        <div className="absolute top-3 left-3 z-[400] bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm border border-slate-200 flex items-center gap-2 text-[10px] text-slate-600 font-medium">
+          <span>Exposition :</span>
           <span className="inline-flex items-center gap-1">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />Faible
           </span>
@@ -105,7 +105,10 @@ const MapComponent: React.FC<Props> = ({
         <MapMarkerCard
           marker={selectedMarker}
           onClose={() => setSelectedMarker(null)}
-          onOpenDrawer={onOpenDrawer}
+          onOpenDrawer={(insee) => {
+            setSelectedMarker(null);
+            onOpenDrawer(insee);
+          }}
         />
       )}
     </div>
@@ -187,7 +190,7 @@ const MapInner: React.FC<MapInnerProps> = ({
           <CircleMarker
             key={marker.insee}
             center={[marker.lat, marker.lng]}
-            radius={selected ? 7 : 5}
+            radius={selected ? 10 : 8}
             pathOptions={{
               fillColor: color,
               color: '#fff',
