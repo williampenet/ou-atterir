@@ -1,5 +1,5 @@
 import React from 'react';
-import { Compass, SlidersHorizontal, Leaf } from 'lucide-react';
+import { Compass, SlidersHorizontal, Search } from 'lucide-react';
 
 interface OnboardingModalProps {
   open: boolean;
@@ -8,21 +8,21 @@ interface OnboardingModalProps {
 
 const STEPS = [
   {
-    icon: SlidersHorizontal,
-    title: 'Sélectionnez vos critères',
-    description: 'Choisissez vos filtres pour afficher les communes qui vous correspondent.',
-    color: 'bg-indigo-100 text-indigo-600',
-  },
-  {
     icon: Compass,
-    title: 'Activez les données climatiques',
-    description: 'D\'un clic sur le toggle, superposez les projections climat 2050 à vos résultats.',
+    title: 'Tri par exposition climatique',
+    description: 'Les communes sont classées selon leur exposition au changement climatique (chaleur, eau, risques naturels, qualité de l\'air, sols). Les moins exposées apparaissent en premier.',
     color: 'bg-orange-100 text-orange-600',
   },
   {
-    icon: Leaf,
-    title: 'Pondération',
-    description: 'Ajustez l\'importance de chaque dimension climatique pour affiner votre tri.',
+    icon: Search,
+    title: 'Affinez votre recherche',
+    description: 'Filtrez par département, taille de commune, équipements, géographie, tendance politique et bien plus.',
+    color: 'bg-indigo-100 text-indigo-600',
+  },
+  {
+    icon: SlidersHorizontal,
+    title: 'Ajustez vos priorités',
+    description: 'Utilisez le bouton Pondération pour donner plus ou moins d\'importance à chaque dimension climatique.',
     color: 'bg-emerald-100 text-emerald-600',
   },
 ];

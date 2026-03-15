@@ -2,7 +2,7 @@ import React, { useEffect, useCallback, useRef, useState } from 'react';
 import { MapContainer, TileLayer, CircleMarker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { MapMarker, MapBounds } from '../types';
-import { BLOC_COLORS, scoreMapColor } from '../constants';
+import { scoreMapColor } from '../constants';
 import MapMarkerCard from './MapMarkerCard';
 
 import 'leaflet/dist/leaflet.css';
@@ -31,8 +31,8 @@ interface Props {
   onBoundsChange: (bounds: MapBounds) => void;
   fitBoundsKey?: number;
   isVisible?: boolean;
-  climateActive?: boolean;
   drawerOpen?: boolean;
+  modalOpen?: boolean;
 }
 
 const MapComponent: React.FC<Props> = ({
@@ -42,8 +42,8 @@ const MapComponent: React.FC<Props> = ({
   onBoundsChange,
   fitBoundsKey = 0,
   isVisible,
-  climateActive,
   drawerOpen,
+  modalOpen,
 }) => {
   const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -68,6 +68,7 @@ const MapComponent: React.FC<Props> = ({
         center={FRANCE_CENTER}
         zoom={FRANCE_ZOOM}
         scrollWheelZoom
+        zoomControl={false}
         maxBounds={FRANCE_BOUNDS}
         maxBoundsViscosity={1.0}
         minZoom={5}
@@ -84,11 +85,10 @@ const MapComponent: React.FC<Props> = ({
           onMarkerClick={handleMarkerClick}
           onBoundsChange={onBoundsChange}
           fitBoundsKey={fitBoundsKey}
-          climateActive={climateActive}
         />
       </MapContainer>
 
-      {climateActive && !drawerOpen && (
+      {!drawerOpen && !modalOpen && (
         <div className="absolute top-3 left-3 z-[400] bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm border border-slate-200 flex items-center gap-2 text-[10px] text-slate-600 font-medium">
           <span>Exposition :</span>
           <span className="inline-flex items-center gap-1">
@@ -123,7 +123,6 @@ interface MapInnerProps {
   onMarkerClick: (marker: MapMarker) => void;
   onBoundsChange: (bounds: MapBounds) => void;
   fitBoundsKey: number;
-  climateActive?: boolean;
 }
 
 const MapInner: React.FC<MapInnerProps> = ({
@@ -132,7 +131,6 @@ const MapInner: React.FC<MapInnerProps> = ({
   onMarkerClick,
   onBoundsChange,
   fitBoundsKey,
-  climateActive,
 }) => {
   const map = useMap();
   const initialRef = useRef(true);
@@ -184,9 +182,7 @@ const MapInner: React.FC<MapInnerProps> = ({
   return (
     <>
       {markers.map((marker) => {
-        const politicalColor = marker.latestBloc ? (BLOC_COLORS[marker.latestBloc] ?? '#94a3b8') : '#94a3b8';
-        const climateColor = marker.climateScore != null ? scoreMapColor(marker.climateScore) : '#94a3b8';
-        const color = climateActive ? climateColor : politicalColor;
+        const color = marker.climateScore != null ? scoreMapColor(marker.climateScore) : '#94a3b8';
         const selected = marker.insee === selectedInsee;
         return (
           <CircleMarker

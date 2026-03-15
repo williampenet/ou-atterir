@@ -5,14 +5,12 @@ import { getDepartments } from '../services/communeService';
 import {
   ChevronDown, Check, MapPin, Mountain, Waves, TreePine,
   Users, GraduationCap, Heart, ShoppingBag, Scale,
-  Train, Dumbbell, Shield, Euro, Compass,
+  Train, Dumbbell, Shield, Euro,
 } from 'lucide-react';
 
 interface QuickFiltersBarProps {
   filters: SearchFilters;
   onFiltersChange: (filters: SearchFilters) => void;
-  climateActive: boolean;
-  onToggleClimate: () => void;
 }
 
 // ─── Dropdown wrapper (generic for all quick filters) ───
@@ -84,7 +82,7 @@ const DropdownItem: React.FC<{
 
 // ─── Main QuickFiltersBar component ───
 
-const QuickFiltersBar: React.FC<QuickFiltersBarProps> = ({ filters, onFiltersChange, climateActive, onToggleClimate }) => {
+const QuickFiltersBar: React.FC<QuickFiltersBarProps> = ({ filters, onFiltersChange }) => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const [visibleCount, setVisibleCount] = useState(11);
@@ -518,28 +516,6 @@ const QuickFiltersBar: React.FC<QuickFiltersBarProps> = ({ filters, onFiltersCha
           </div>
         ))}
       </div>
-      {/* Climate toggle — always visible, outside resize container */}
-      <button
-        onClick={onToggleClimate}
-        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all whitespace-nowrap flex-shrink-0 ${
-          climateActive
-            ? 'bg-red-50 border-red-300 text-red-700 shadow-sm hover:bg-red-100 hover:border-red-400'
-            : 'bg-slate-50 border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400'
-        }`}
-      >
-        <Compass className="w-3.5 h-3.5" />
-        <span>Climat</span>
-        {/* Toggle switch visual */}
-        <div className={`relative inline-flex h-5 w-8 items-center rounded-full transition-colors ${
-          climateActive ? 'bg-red-500' : 'bg-slate-400'
-        }`}>
-          <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-              climateActive ? 'translate-x-3.5' : 'translate-x-0.5'
-            }`}
-          />
-        </div>
-      </button>
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { SlidersHorizontal, X, Scale, Menu, Loader2, Compass } from 'lucide-react';
-import { searchCommunesInBounds, searchCommunesClimateInBounds, resultToMapMarker, getCommuneByInsee, computeWeightedScore } from './services/communeService';
+import { SlidersHorizontal, X, Scale, Menu, Loader2 } from 'lucide-react';
+import { searchCommunesClimateInBounds, resultToMapMarker, getCommuneByInsee, computeWeightedScore } from './services/communeService';
 import { Commune, IdealResult, PaginatedResults, SearchFilters, MapBounds, ClimateWeights } from './types';
 import { DEFAULT_CLIMATE_WEIGHTS } from './constants';
 import FilterSheet from './components/FilterSheet';
@@ -30,18 +30,9 @@ const App: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [fitBoundsKey, setFitBoundsKey] = useState(0);
 
-  // ─── Climate toggle state (bidirectional ON/OFF) ───
-  const [climateActive, setClimateActive] = useState(() => localStorage.getItem('climateActive') === 'true');
+  // ─── Climate weighting (climate is always active) ───
   const [climateWeights, setClimateWeights] = useState<ClimateWeights>(DEFAULT_CLIMATE_WEIGHTS);
   const [weightingPanelOpen, setWeightingPanelOpen] = useState(false);
-
-  const toggleClimate = useCallback(() => {
-    setClimateActive(prev => {
-      const next = !prev;
-      localStorage.setItem('climateActive', String(next));
-      return next;
-    });
-  }, []);
 
   // ─── Onboarding modal (first visit only) ───
   const [showOnboarding, setShowOnboarding] = useState(
@@ -54,18 +45,13 @@ const App: React.FC = () => {
   }, []);
 
   const filtersRef = useRef(filters);
-  const climateActiveRef = useRef(climateActive);
   const searchIdRef = useRef(0);
   const skipNextBoundsSearch = useRef(false);
 
   const filtersKey = JSON.stringify(filters);
 
-  useEffect(() => { climateActiveRef.current = climateActive; }, [climateActive]);
-
-  const doSearch = useCallback((f: SearchFilters, bounds: MapBounds | null, landed: boolean) => {
-    return landed
-      ? searchCommunesClimateInBounds(f, bounds)
-      : searchCommunesInBounds(f, bounds);
+  const doSearch = useCallback((f: SearchFilters, bounds: MapBounds | null) => {
+    return searchCommunesClimateInBounds(f, bounds);
   }, []);
 
   useEffect(() => {
@@ -76,7 +62,7 @@ const App: React.FC = () => {
     const id = ++searchIdRef.current;
     setLoading(true);
 
-    doSearch(filters, null, climateActive).then(({ results, total }) => {
+    doSearch(filters, null).then(({ results, total }) => {
       if (id !== searchIdRef.current) return;
       setAllResults(results);
       setTotalCount(total);
@@ -88,7 +74,7 @@ const App: React.FC = () => {
       setTotalCount(0);
       setLoading(false);
     });
-  }, [filtersKey, climateActive, doSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filtersKey, doSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleBoundsChange = useCallback((bounds: MapBounds) => {
     if (skipNextBoundsSearch.current) {
@@ -100,7 +86,7 @@ const App: React.FC = () => {
     const id = ++searchIdRef.current;
     setLoading(true);
 
-    doSearch(filtersRef.current, bounds, climateActiveRef.current).then(({ results, total }) => {
+    doSearch(filtersRef.current, bounds).then(({ results, total }) => {
       if (id !== searchIdRef.current) return;
       setAllResults(results);
       setTotalCount(total);
@@ -115,13 +101,12 @@ const App: React.FC = () => {
 
   // Re-sort client-side when weights change (instant, no server call)
   const sortedResults = useMemo(() => {
-    if (!climateActive) return allResults;
     return [...allResults].sort((a, b) => {
       const sa = a.climateScores ? computeWeightedScore(a.climateScores, climateWeights) : 50;
       const sb = b.climateScores ? computeWeightedScore(b.climateScores, climateWeights) : 50;
       return sa - sb;
     });
-  }, [allResults, climateActive, climateWeights]);
+  }, [allResults, climateWeights]);
 
   const markers = useMemo(() => sortedResults.map(resultToMapMarker), [sortedResults]);
 
@@ -178,12 +163,6 @@ const App: React.FC = () => {
             <h1 className="text-lg font-extrabold text-slate-900 tracking-tight">
               Ou Atterir
             </h1>
-            {climateActive && (
-              <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-600 border border-red-200">
-                <Compass className="w-2.5 h-2.5" />
-                Climat
-              </span>
-            )}
           </div>
 
           {/* Desktop nav */}
@@ -256,17 +235,15 @@ const App: React.FC = () => {
         <>
           {/* Desktop: quick filters bar */}
           <div className="hidden sm:flex items-center max-w-[1400px] mx-auto w-full px-4 py-2 bg-slate-100 gap-2">
-            <QuickFiltersBar filters={filters} onFiltersChange={setFilters} climateActive={climateActive} onToggleClimate={toggleClimate} />
+            <QuickFiltersBar filters={filters} onFiltersChange={setFilters} />
             <div className="flex items-center gap-2 flex-shrink-0">
-              {climateActive && (
-                <button
-                  onClick={() => setWeightingPanelOpen(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600 active:scale-95 transition-all shadow-sm"
-                >
-                  <SlidersHorizontal className="w-3.5 h-3.5" />
-                  Pondération
-                </button>
-              )}
+              <button
+                onClick={() => setWeightingPanelOpen(true)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600 active:scale-95 transition-all shadow-sm"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                Pondération
+              </button>
               <button
                 onClick={() => setFiltersOpen(true)}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 active:scale-95 transition-all shadow-sm"
@@ -300,7 +277,7 @@ const App: React.FC = () => {
                     onPageChange={handlePageChange}
                     compareList={compareList}
                     onToggleCompare={toggleCompare}
-                    climateActive={climateActive}
+
                   />
                 )}
               </div>
@@ -315,8 +292,8 @@ const App: React.FC = () => {
                 onBoundsChange={handleBoundsChange}
                 fitBoundsKey={fitBoundsKey}
                 isVisible={activePage === 'explorer'}
-                climateActive={climateActive}
                 drawerOpen={!!selectedCommune}
+                modalOpen={showOnboarding}
               />
             </div>
           </div>
@@ -330,8 +307,8 @@ const App: React.FC = () => {
               onBoundsChange={handleBoundsChange}
               fitBoundsKey={fitBoundsKey}
               isVisible={activePage === 'explorer'}
-              climateActive={climateActive}
               drawerOpen={!!selectedCommune}
+              modalOpen={showOnboarding}
             />
 
             <BottomSheet communeCount={totalCount}>
@@ -348,46 +325,21 @@ const App: React.FC = () => {
                   onPageChange={handlePageChange}
                   compareList={compareList}
                   onToggleCompare={toggleCompare}
-                  climateActive={climateActive}
+  
                 />
               )}
             </BottomSheet>
 
-            {/* Mobile: bottom bar with Climat toggle + Pondération + Filtres */}
+            {/* Mobile: bottom bar with Pondération + Filtres */}
             <div className={`fixed left-0 right-0 z-40 flex items-center justify-center gap-2 px-3 py-2 ${compareList.length > 0 ? 'bottom-16' : 'bottom-3'}`}>
-              {/* Climate toggle */}
+              {/* Pondération */}
               <button
-                onClick={toggleClimate}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-2xl text-xs font-bold shadow-lg transition-all active:scale-95 border ${
-                  climateActive
-                    ? 'bg-red-50 border-red-300 text-red-700 shadow-red-200/50 hover:bg-red-100'
-                    : 'bg-slate-50 border-slate-300 text-slate-600 shadow-slate-200/50 hover:bg-slate-100'
-                }`}
+                onClick={() => setWeightingPanelOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs font-bold bg-amber-500 text-white shadow-lg shadow-amber-500/30 hover:bg-amber-600 active:scale-95 transition-all"
               >
-                <Compass className="w-3.5 h-3.5" />
-                <span>Climat</span>
-                {/* Toggle switch visual */}
-                <div className={`relative inline-flex h-5 w-8 items-center rounded-full transition-colors ${
-                  climateActive ? 'bg-red-500' : 'bg-slate-400'
-                }`}>
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      climateActive ? 'translate-x-3.5' : 'translate-x-0.5'
-                    }`}
-                  />
-                </div>
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                Pondération
               </button>
-
-              {/* Pondération (only when climate active) */}
-              {climateActive && (
-                <button
-                  onClick={() => setWeightingPanelOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs font-bold bg-amber-500 text-white shadow-lg shadow-amber-500/30 hover:bg-amber-600 active:scale-95 transition-all"
-                >
-                  <SlidersHorizontal className="w-3.5 h-3.5" />
-                  Pondération
-                </button>
-              )}
 
               {/* Filtres */}
               <button
@@ -455,7 +407,6 @@ const App: React.FC = () => {
         <CommuneDrawer
           commune={selectedCommune}
           onClose={() => setSelectedCommune(null)}
-          climateActive={climateActive}
         />
       )}
 
@@ -497,21 +448,183 @@ const MobileNavButton: React.FC<{
   </button>
 );
 
-/* ─── About Page (placeholder) ─── */
+/* ─── About Page ─── */
 
 const AboutPage: React.FC = () => (
-  <main className="flex-grow max-w-2xl mx-auto w-full px-4 py-12">
-    <h2 className="text-2xl font-bold text-slate-800 mb-4">A propos</h2>
-    <div className="prose prose-slate">
-      <p className="text-slate-600 leading-relaxed">
-        <strong>Ou Atterir</strong> est un outil d'exploration des communes francaises.
-        Il permet de filtrer et comparer les communes selon des criteres politiques,
-        geographiques, d'equipements et de qualite de vie.
-      </p>
-      <p className="text-slate-600 leading-relaxed mt-4">
-        Les donnees proviennent de sources publiques : resultats electoraux du Ministere de l'Interieur,
-        Base Permanente des Equipements (INSEE), Georisques, donnees DVF, et ATMO France.
-      </p>
+  <main className="flex-grow w-full bg-slate-50">
+    {/* Hero */}
+    <div className="bg-gradient-to-br from-indigo-700 to-indigo-500 text-white">
+      <div className="max-w-3xl mx-auto px-6 py-14">
+        <p className="text-indigo-200 text-sm font-semibold uppercase tracking-widest mb-3">À propos</p>
+        <h2 className="text-3xl sm:text-4xl font-extrabold leading-tight mb-4">
+          Où atterrir face au<br />dérèglement climatique ?
+        </h2>
+        <p className="text-indigo-100 text-lg leading-relaxed max-w-xl">
+          Un outil d'exploration des communes françaises, pensé pour ceux qui se demandent
+          où vivre à l'horizon 2030–2050.
+        </p>
+      </div>
+    </div>
+
+    <div className="max-w-3xl mx-auto px-6 py-12 space-y-14">
+
+      {/* Mission */}
+      <section>
+        <h3 className="text-xs font-bold uppercase tracking-widest text-indigo-500 mb-3">La mission</h3>
+        <div className="space-y-4 text-slate-600 leading-relaxed">
+          <p>
+            Le titre du projet s'inspire des travaux de Bruno Latour et Nikolaj Schultz,
+            notamment du <em>Mémo sur la nouvelle classe écologique</em> (2022). Face à l'accélération
+            du dérèglement climatique, la question du territoire où l'on vit — et où l'on pourra
+            continuer à vivre — devient une question politique de premier plan.
+          </p>
+          <p>
+            Où Atterrir propose un cadre de comparaison entre les 34 000+ communes françaises,
+            en croisant leur vulnérabilité climatique à horizon 2050 avec des critères pratiques :
+            équipements, prix de l'immobilier, géographie, tendance politique locale.
+            L'objectif n'est pas de prescrire un choix, mais de rendre visible ce que les données
+            permettent de savoir.
+          </p>
+        </div>
+      </section>
+
+      {/* Scoring climatique */}
+      <section>
+        <h3 className="text-xs font-bold uppercase tracking-widest text-indigo-500 mb-3">Le score d'exposition climatique</h3>
+        <div className="space-y-4 text-slate-600 leading-relaxed">
+          <p>
+            Chaque commune reçoit un score global d'exposition climatique entre 0 et 100,
+            calculé comme la moyenne de quatre dimensions. Ce score est une <strong>rang percentile</strong> :
+            une commune à 80 est plus exposée que 80 % des communes françaises.
+            Plus le score est bas, moins la commune est exposée.
+          </p>
+          <p>
+            Les projections utilisées sont celles de l'horizon <strong>2050</strong>, issu du scénario
+            TRACC (Trajectoire de Réchauffement de Référence pour l'Adaptation au Changement Climatique),
+            qui correspond à un réchauffement de +2,7 °C en France hexagonale par rapport
+            à la période de référence 1976–2005. Chaque score est la médiane de 17 modèles climatiques.
+          </p>
+        </div>
+
+        {/* Tableau des 4 dimensions */}
+        <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Dimension</th>
+                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Indicateurs composants</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              <tr>
+                <td className="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">🌡️ Chaleur</td>
+                <td className="px-4 py-3 text-slate-500">Vagues de chaleur (S3), jours très chauds ≥ 35 °C (S1), nuits chaudes (S2), îlot de chaleur urbain (ICU)</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">💧 Eau</td>
+                <td className="px-4 py-3 text-slate-500">Sol sec en été (R5), raréfaction des jours de pluie estivaux (G4 — inversé)</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">⚠️ Risques</td>
+                <td className="px-4 py-3 text-slate-500">Risque incendie de végétation (R4), précipitations extrêmes (R2), nombre de risques naturels répertoriés (GASPAR)</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">💨 Air</td>
+                <td className="px-4 py-3 text-slate-500">Concentration en PM2.5 (particules fines)</td>
+              </tr>
+              <tr className="bg-slate-50">
+                <td className="px-4 py-3 font-semibold text-slate-400 whitespace-nowrap">🌱 Sols</td>
+                <td className="px-4 py-3 text-slate-400 italic">Données en cours d'intégration</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p className="mt-4 text-sm text-slate-500 leading-relaxed">
+          Le bouton <strong>Pondération</strong> permet d'ajuster le poids de chaque dimension
+          selon vos priorités personnelles. Le reclassement s'opère instantanément, sans nouvel
+          appel au serveur.
+        </p>
+      </section>
+
+      {/* Sources */}
+      <section>
+        <h3 className="text-xs font-bold uppercase tracking-widest text-indigo-500 mb-3">Sources de données</h3>
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Données</th>
+                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Source</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              <tr>
+                <td className="px-4 py-3 text-slate-700 font-medium">Projections climatiques</td>
+                <td className="px-4 py-3 text-slate-500">Climadiag Commune — Météo-France · Scénario TRACC · Réf. 1976–2005</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-3 text-slate-700 font-medium">Qualité de l'air (PM2.5)</td>
+                <td className="px-4 py-3 text-slate-500">Agence européenne pour l'environnement (2024)</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-3 text-slate-700 font-medium">Risques naturels</td>
+                <td className="px-4 py-3 text-slate-500">Géorisques — BDPR/GASPAR, Ministère de la Transition écologique</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-3 text-slate-700 font-medium">Résultats électoraux</td>
+                <td className="px-4 py-3 text-slate-500">Ministère de l'Intérieur — élections municipales</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-3 text-slate-700 font-medium">Équipements et services</td>
+                <td className="px-4 py-3 text-slate-500">Base Permanente des Équipements (BPE) — INSEE</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-3 text-slate-700 font-medium">Prix de l'immobilier</td>
+                <td className="px-4 py-3 text-slate-500">Demandes de Valeurs Foncières (DVF) — DGFiP</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Limites */}
+      <section>
+        <h3 className="text-xs font-bold uppercase tracking-widest text-indigo-500 mb-3">Précautions d'usage</h3>
+        <ul className="space-y-3 text-slate-600 leading-relaxed">
+          <li className="flex gap-3">
+            <span className="text-slate-300 mt-0.5 flex-shrink-0">—</span>
+            <span>Les scores climatiques sont des <strong>rangs relatifs</strong> entre communes françaises,
+            pas des mesures absolues de danger. Une commune à 65/100 n'est pas « dangereuse » :
+            elle est plus exposée que la médiane nationale.</span>
+          </li>
+          <li className="flex gap-3">
+            <span className="text-slate-300 mt-0.5 flex-shrink-0">—</span>
+            <span>Les projections 2050 sont des <strong>médianes de 17 modèles climatiques</strong>.
+            Elles représentent le résultat le plus probable, pas une certitude. L'incertitude
+            s'accroît à mesure qu'on s'éloigne de l'horizon de référence.</span>
+          </li>
+          <li className="flex gap-3">
+            <span className="text-slate-300 mt-0.5 flex-shrink-0">—</span>
+            <span>Les données sont agrégées à l'<strong>échelle communale</strong>. Des disparités
+            importantes peuvent exister au sein d'une même commune (vallée vs. plateau,
+            centre-ville vs. périphérie).</span>
+          </li>
+          <li className="flex gap-3">
+            <span className="text-slate-300 mt-0.5 flex-shrink-0">—</span>
+            <span>La dimension <strong>Sols</strong> (pollution, retrait-gonflement des argiles) n'est
+            pas encore intégrée dans le score global. Elle sera ajoutée dans une version ultérieure.</span>
+          </li>
+        </ul>
+      </section>
+
+      {/* Footer */}
+      <div className="pt-4 border-t border-slate-200 text-xs text-slate-400 leading-relaxed">
+        Où Atterrir est un projet indépendant et non commercial. Les données utilisées sont
+        publiques et librement accessibles. Si vous identifiez une erreur ou souhaitez
+        contribuer, n'hésitez pas à nous contacter.
+      </div>
+
     </div>
   </main>
 );

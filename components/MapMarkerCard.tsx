@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, MapPin, ChevronRight } from 'lucide-react';
 import { MapMarker } from '../types';
-import { BLOC_COLORS } from '../constants';
+import { scoreMapColor, scoreBgColor } from '../constants';
 
 interface Props {
   marker: MapMarker;
@@ -9,11 +9,20 @@ interface Props {
   onOpenDrawer: (insee: string) => void;
 }
 
+function exposureLabel(score: number): string {
+  if (score < 33) return 'Faible';
+  if (score < 66) return 'Modérée';
+  return 'Forte';
+}
+
 const MapMarkerCard: React.FC<Props> = ({ marker, onClose, onOpenDrawer }) => {
-  const blocColor = marker.latestBloc ? (BLOC_COLORS[marker.latestBloc] ?? '#94a3b8') : '#94a3b8';
+  const hasScore = marker.climateScore != null;
+  const score = marker.climateScore ?? 50;
+  const dotColor = scoreMapColor(score);
+  const badgeClass = scoreBgColor(score);
 
   return (
-    <div className="absolute bottom-4 left-4 right-4 z-[400] pointer-events-none sm:left-auto sm:right-4 sm:max-w-sm">
+    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[400] w-[calc(100%-2rem)] max-w-sm pointer-events-none">
       <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden pointer-events-auto">
         <div className="p-4">
           <div className="flex items-start justify-between gap-3">
@@ -24,13 +33,12 @@ const MapMarkerCard: React.FC<Props> = ({ marker, onClose, onOpenDrawer }) => {
                   <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
                   {marker.zipcode}
                 </span>
-                <div className="flex items-center gap-1.5">
-                  <div
-                    className="w-3 h-3 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: blocColor }}
-                  />
-                  <span className="text-slate-500">{marker.latestBloc ?? 'Divers'}</span>
-                </div>
+                {hasScore && (
+                  <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-semibold border ${badgeClass}`}>
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor }} />
+                    Exposition {exposureLabel(score)} · {Math.round(score)}/100
+                  </span>
+                )}
               </div>
             </div>
             <button
