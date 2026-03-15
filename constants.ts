@@ -95,14 +95,14 @@ export const HEAT_WAVE_LEVELS: Record<HeatWaveLevel, { label: string; descriptio
 };
 
 export const CLIMAT_INDICATORS = [
-  { key: 's3', label: 'Vagues de chaleur', unit: 'jours/an', description: 'Épisodes prolongés de chaleur jour+nuit' },
-  { key: 's1', label: 'Jours très chauds (≥ 35 °C)', unit: 'jours/an', description: 'T° maximale ≥ 35 °C' },
-  { key: 's2', label: 'Nuits chaudes', unit: 'jours/an', description: 'T° minimale > 20 °C' },
-  { key: 's4', label: 'Vagues de froid', unit: 'jours/an', description: 'Épisodes prolongés de froid' },
-  { key: 'r2', label: 'Précipitations extrêmes', unit: 'mm', description: 'Quantile 99,9 % (~1 fois / 3 ans)' },
-  { key: 'r4', label: 'Risque feu de végétation', unit: 'jours/an', description: 'Jours où IFM > 40' },
-  { key: 'r5Ete', label: 'Sol sec (été)', unit: 'jours', description: 'Réserve eau du sol < 40 %' },
-  { key: 'g4Ete', label: 'Jours de pluie (été)', unit: 'jours', description: 'Cumul > 1 mm' },
+  { key: 's1', label: 'Jours très chauds (≥ 35 °C)', unit: 'jours/an', description: 'T° maximale ≥ 35 °C', family: 'temperatures' as const },
+  { key: 's2', label: 'Nuits chaudes', unit: 'jours/an', description: 'T° minimale > 20 °C', family: 'temperatures' as const },
+  { key: 's4', label: 'Vagues de froid', unit: 'jours/an', description: 'Épisodes prolongés de froid', family: 'temperatures' as const },
+  { key: 's3', label: 'Sécheresse atmosphérique', unit: 'jours/an', description: 'Épisodes prolongés de chaleur jour+nuit (VPD)', family: 'eau' as const },
+  { key: 'r5Ete', label: 'Sol sec (été)', unit: 'jours', description: 'Réserve eau du sol < 40 %', family: 'eau' as const },
+  { key: 'g4Ete', label: 'Jours de pluie (été)', unit: 'jours', description: 'Cumul > 1 mm', family: 'eau' as const },
+  { key: 'r4', label: 'Risque feu de végétation', unit: 'jours/an', description: 'Jours où IFM > 40', family: 'risques' as const },
+  { key: 'r2', label: 'Précipitations extrêmes', unit: 'mm', description: 'Quantile 99,9 % (~1 fois / 3 ans)', family: 'risques' as const },
 ] as const;
 
 export const DEPARTMENT_CODES: Record<string, string> = {
