@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { SlidersHorizontal, X, Scale, Menu, Loader2 } from 'lucide-react';
-import { searchCommunesClimateInBounds, resultToMapMarker, getCommuneByInsee, computeWeightedScore } from './services/communeService';
-import { Commune, IdealResult, PaginatedResults, SearchFilters, MapBounds, ClimateWeights } from './types';
+import { SlidersHorizontal, X, Scale, Menu } from 'lucide-react';
+import { searchCommunesClimateInBounds, computeWeightedScore } from './services/communeService';
+import { Commune, IdealResult, PaginatedResults, SearchFilters, ClimateWeights } from './types';
 import { DEFAULT_CLIMATE_WEIGHTS } from './constants';
 import FilterSheet from './components/FilterSheet';
 import ResultsList from './components/ResultsList';
 import CommuneDrawer from './components/CommuneDrawer';
 import CompareView from './components/CompareView';
-import MapComponent from './components/MapComponent';
-import BottomSheet from './components/BottomSheet';
 import ClimateWeighting from './components/ClimateWeighting';
 import OnboardingModal from './components/OnboardingModal';
 import QuickFiltersBar from './components/QuickFiltersBar';
+import CommuneSearchBar from './components/CommuneSearchBar';
 
 type AppPage = 'explorer' | 'about';
 const PAGE_SIZE = 30;
@@ -28,7 +27,6 @@ const App: React.FC = () => {
   const [compareList, setCompareList] = useState<Commune[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [fitBoundsKey, setFitBoundsKey] = useState(0);
 
   // ─── Climate weighting (climate is always active) ───
   const [climateWeights, setClimateWeights] = useState<ClimateWeights>(DEFAULT_CLIMATE_WEIGHTS);
@@ -44,49 +42,17 @@ const App: React.FC = () => {
     localStorage.setItem('hasSeenOnboarding', 'true');
   }, []);
 
-  const filtersRef = useRef(filters);
   const searchIdRef = useRef(0);
-  const skipNextBoundsSearch = useRef(false);
 
   const filtersKey = JSON.stringify(filters);
 
-  const doSearch = useCallback((f: SearchFilters, bounds: MapBounds | null) => {
-    return searchCommunesClimateInBounds(f, bounds);
-  }, []);
-
   useEffect(() => {
-    filtersRef.current = filters;
     setPage(1);
-    skipNextBoundsSearch.current = true;
 
     const id = ++searchIdRef.current;
     setLoading(true);
 
-    doSearch(filters, null).then(({ results, total }) => {
-      if (id !== searchIdRef.current) return;
-      setAllResults(results);
-      setTotalCount(total);
-      setLoading(false);
-      setFitBoundsKey(k => k + 1);
-    }).catch(() => {
-      if (id !== searchIdRef.current) return;
-      setAllResults([]);
-      setTotalCount(0);
-      setLoading(false);
-    });
-  }, [filtersKey, doSearch]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleBoundsChange = useCallback((bounds: MapBounds) => {
-    if (skipNextBoundsSearch.current) {
-      skipNextBoundsSearch.current = false;
-      return;
-    }
-
-    setPage(1);
-    const id = ++searchIdRef.current;
-    setLoading(true);
-
-    doSearch(filtersRef.current, bounds).then(({ results, total }) => {
+    searchCommunesClimateInBounds(filters, null).then(({ results, total }) => {
       if (id !== searchIdRef.current) return;
       setAllResults(results);
       setTotalCount(total);
@@ -97,7 +63,7 @@ const App: React.FC = () => {
       setTotalCount(0);
       setLoading(false);
     });
-  }, [doSearch]);
+  }, [filtersKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-sort client-side when weights change (instant, no server call)
   const sortedResults = useMemo(() => {
@@ -108,8 +74,6 @@ const App: React.FC = () => {
     });
   }, [allResults, climateWeights]);
 
-  const markers = useMemo(() => sortedResults.map(resultToMapMarker), [sortedResults]);
-
   const paginatedResults: PaginatedResults<IdealResult> = useMemo(() => ({
     data: sortedResults.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
     total: totalCount,
@@ -119,11 +83,6 @@ const App: React.FC = () => {
   }), [sortedResults, page, totalCount]);
 
   const handlePageChange = (p: number) => setPage(p);
-
-  const handleMapOpenDrawer = async (insee: string) => {
-    const commune = await getCommuneByInsee(insee);
-    if (commune) setSelectedCommune(commune);
-  };
 
   const removeFromCompare = (insee: string) => {
     setCompareList(prev => prev.filter(c => c.insee !== insee));
@@ -232,119 +191,46 @@ const App: React.FC = () => {
 
       {/* ─── Page content ─── */}
       {activePage === 'explorer' ? (
-        <>
-          {/* Desktop: quick filters bar */}
-          <div className="hidden sm:flex items-center max-w-[1400px] mx-auto w-full px-4 py-2 bg-slate-100 gap-2">
-            <QuickFiltersBar filters={filters} onFiltersChange={setFilters} />
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                onClick={() => setWeightingPanelOpen(true)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600 active:scale-95 transition-all shadow-sm"
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-                Pondération
-              </button>
-              <button
-                onClick={() => setFiltersOpen(true)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 active:scale-95 transition-all shadow-sm"
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-                + Filtres
-                {activeFilterCount > 0 && (
-                  <span className="text-[10px] font-bold bg-white/20 px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                    {activeFilterCount}
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Desktop: list + map side by side */}
-          <div className="hidden sm:flex overflow-hidden" style={{ height: 'calc(100vh - 97px)' }}>
-            {/* List panel */}
-            <div className="w-[380px] flex-shrink-0 overflow-y-auto border-r border-slate-200 bg-white">
-              <div className="px-4 py-4 space-y-4">
-                {loading ? (
-                  <div className="flex flex-col items-center justify-center py-20">
-                    <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
-                    <p className="text-slate-500 text-sm font-medium">Recherche en cours...</p>
-                  </div>
-                ) : (
-                  <ResultsList
-                    results={paginatedResults}
-                    selectedInsee={selectedCommune?.insee}
-                    onSelectCommune={setSelectedCommune}
-                    onPageChange={handlePageChange}
-                    compareList={compareList}
-                    onToggleCompare={toggleCompare}
-
-                  />
-                )}
+        <main className="flex-grow overflow-y-auto">
+          {/* Toolbar: quick filters + buttons */}
+          <div className="sticky top-0 z-30 bg-slate-100">
+            <div className="hidden sm:flex items-center max-w-4xl mx-auto w-full px-4 py-2 gap-2">
+              <QuickFiltersBar filters={filters} onFiltersChange={setFilters} />
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => setWeightingPanelOpen(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600 active:scale-95 transition-all shadow-sm"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  Pondération
+                </button>
+                <button
+                  onClick={() => setFiltersOpen(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 active:scale-95 transition-all shadow-sm"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  + Filtres
+                  {activeFilterCount > 0 && (
+                    <span className="text-[10px] font-bold bg-white/20 px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
               </div>
             </div>
 
-            {/* Map panel */}
-            <div className="flex-grow relative h-full">
-              <MapComponent
-                markers={markers}
-                selectedInsee={selectedCommune?.insee ?? null}
-                onOpenDrawer={handleMapOpenDrawer}
-                onBoundsChange={handleBoundsChange}
-                fitBoundsKey={fitBoundsKey}
-                isVisible={activePage === 'explorer'}
-                drawerOpen={!!selectedCommune}
-                modalOpen={showOnboarding}
-              />
-            </div>
-          </div>
-
-          {/* Mobile: full-screen map + bottom sheet */}
-          <div className="sm:hidden relative" style={{ height: 'calc(100vh - 53px)' }}>
-            <MapComponent
-              markers={markers}
-              selectedInsee={selectedCommune?.insee ?? null}
-              onOpenDrawer={handleMapOpenDrawer}
-              onBoundsChange={handleBoundsChange}
-              fitBoundsKey={fitBoundsKey}
-              isVisible={activePage === 'explorer'}
-              drawerOpen={!!selectedCommune}
-              modalOpen={showOnboarding}
-            />
-
-            <BottomSheet communeCount={totalCount}>
-              {loading ? (
-                <div className="flex flex-col items-center justify-center py-16">
-                  <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
-                  <p className="text-slate-500 text-sm font-medium">Recherche en cours...</p>
-                </div>
-              ) : (
-                <ResultsList
-                  results={paginatedResults}
-                  selectedInsee={selectedCommune?.insee}
-                  onSelectCommune={setSelectedCommune}
-                  onPageChange={handlePageChange}
-                  compareList={compareList}
-                  onToggleCompare={toggleCompare}
-  
-                />
-              )}
-            </BottomSheet>
-
-            {/* Mobile: bottom bar with Pondération + Filtres */}
-            <div className={`fixed left-0 right-0 z-40 flex items-center justify-center gap-2 px-3 py-2 ${compareList.length > 0 ? 'bottom-16' : 'bottom-3'}`}>
-              {/* Pondération */}
+            {/* Mobile: compact filter buttons */}
+            <div className="sm:hidden flex items-center justify-center gap-2 px-4 py-2">
               <button
                 onClick={() => setWeightingPanelOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs font-bold bg-amber-500 text-white shadow-lg shadow-amber-500/30 hover:bg-amber-600 active:scale-95 transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-amber-500 text-white shadow-sm hover:bg-amber-600 active:scale-95 transition-all"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
                 Pondération
               </button>
-
-              {/* Filtres */}
               <button
                 onClick={() => setFiltersOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 active:scale-95 transition-all"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
                 Filtres
@@ -356,7 +242,30 @@ const App: React.FC = () => {
               </button>
             </div>
           </div>
-        </>
+
+          {/* Main content: search + results list */}
+          <div className="max-w-4xl mx-auto px-4 py-4 space-y-4 pb-20">
+            {/* Search bar */}
+            <CommuneSearchBar onSelectCommune={setSelectedCommune} />
+
+            {/* Results */}
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
+                <p className="text-slate-500 text-sm font-medium">Recherche en cours...</p>
+              </div>
+            ) : (
+              <ResultsList
+                results={paginatedResults}
+                selectedInsee={selectedCommune?.insee}
+                onSelectCommune={setSelectedCommune}
+                onPageChange={handlePageChange}
+                compareList={compareList}
+                onToggleCompare={toggleCompare}
+              />
+            )}
+          </div>
+        </main>
       ) : (
         <AboutPage />
       )}

@@ -3,7 +3,7 @@
 Import French election data from data.gouv.fr aggregated parquets.
 
 Covers all available elections:
-  - Municipales (2001, 2008, 2014, 2020)
+  - Municipales (2001, 2008, 2014, 2020, 2026 via import_municipales_2026.py)
   - Présidentielles T1 (2002, 2007, 2012, 2017, 2022)
   - Législatives T1 (2002, 2007, 2012, 2017, 2022, 2024)
   - Européennes (1999, 2004, 2009, 2014, 2019, 2024)
@@ -67,11 +67,11 @@ NUANCE_BLOC = {
     "LUDI": "Centre", "ALLI": "Centre", "LUC": "Centre", "LMC": "Centre",
     "LUCG": "Centre", "LUCD": "Centre", "LGC": "Centre", "PRV": "Centre",
     "REM": "Centre-droit", "LREM": "Centre-droit", "ENS": "Centre-droit",
-    "LENS": "Centre-droit", "HOR": "Centre-droit", "EM": "Centre-droit",
+    "LENS": "Centre-droit", "HOR": "Centre-droit", "LHOR": "Centre-droit", "EM": "Centre-droit",
     "MAJ": "Centre-droit", "LMAJ": "Centre-droit", "LMP": "Centre-droit",
     "LMMD": "Centre-droit", "M": "Centre-droit", "M-NC": "Centre-droit",
     "UMP": "Droite", "LUMP": "Droite", "LR": "Droite", "LLR": "Droite",
-    "DVD": "Droite", "LDVD": "Droite", "LUD": "Droite", "UDFD": "Droite",
+    "DVD": "Droite", "LDVD": "Droite", "LUD": "Droite", "LUDR": "Droite", "UDFD": "Droite",
     "MPF": "Droite", "UD": "Droite", "RPR": "Droite", "DL": "Droite",
     "FRS": "Droite",
     "FN": "Extrême-droite", "LFN": "Extrême-droite", "RN": "Extrême-droite",
