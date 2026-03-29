@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Commune, ElectionType, EquipmentDetail, EquipmentDomain, RiskDetail, RiskLevel, DvfData, AirQuality, ClimatData, ClimatProjection } from '../types';
 import { getCommuneByInsee, getEquipmentDetails, getCommuneRisks, getDvfStats, getCommuneAirQuality, AirQualityData, getCommuneClimat } from '../services/communeService';
 import { BLOC_COLORS, EQUIPMENT_DOMAINS, RISK_LEVELS, AIR_QUALITY_LEVELS, CLIMAT_INDICATORS, HEAT_WAVE_LEVELS } from '../constants';
+import type { IndicatorTooltipContent } from '../constants';
 import StabilityBadge from './StabilityBadge';
 import DvfChart from './DvfChart';
+import IndicatorInfobox from './IndicatorInfobox';
 import {
   X, ShoppingBag, GraduationCap, Heart, Train, Dumbbell,
   AlertTriangle, Wind, Store, Scale, Euro, Thermometer, Flame,
-  MapPin, Users, Droplets, Sprout,
+  MapPin, Users, Droplets, Sprout, Info,
 } from 'lucide-react';
 
 interface Props {
@@ -128,7 +130,9 @@ function heatColor(ref: number | null, val: number | null): string {
   return 'text-red-600';
 }
 
-const ClimatRow: React.FC<{ label: string; unit: string; proj: ClimatProjection }> = ({ label, unit, proj }) => {
+const ClimatRow: React.FC<{ label: string; unit: string; proj: ClimatProjection; tooltip?: IndicatorTooltipContent }> =
+  ({ label, unit, proj, tooltip }) => {
+  const [showInfo, setShowInfo] = React.useState(false);
   const hasData = proj.ref != null || proj.y2030 != null;
   if (!hasData) return null;
   const multiplier = proj.ref && proj.ref > 0 && proj.y2050
@@ -137,11 +141,23 @@ const ClimatRow: React.FC<{ label: string; unit: string; proj: ClimatProjection 
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-semibold text-slate-700">{label}</span>
+        <div className="flex items-center gap-1">
+          <span className="text-xs font-semibold text-slate-700">{label}</span>
+          {tooltip && (
+            <button
+              onClick={() => setShowInfo(v => !v)}
+              className={`transition-colors ${showInfo ? 'text-sky-500' : 'text-slate-400 hover:text-sky-500'}`}
+              aria-label="En savoir plus"
+            >
+              <Info className="w-3 h-3" />
+            </button>
+          )}
+        </div>
         {multiplier != null && multiplier > 1 && (
-          <span className="text-[10px] font-bold text-orange-500">x{multiplier} en 2050</span>
+          <span className="text-[10px] font-bold text-orange-500">×{multiplier} en 2050</span>
         )}
       </div>
+      {showInfo && tooltip && <IndicatorInfobox content={tooltip} multiplier={multiplier} />}
       <div className="grid grid-cols-4 gap-1 text-center">
         <div className="bg-slate-100 rounded-lg py-1.5 px-1">
           <div className="text-[10px] text-slate-400 mb-0.5">Réf.</div>
@@ -208,8 +224,8 @@ const TemperaturesSection: React.FC<{ data: ClimatData }> = ({ data }) => {
         </div>
       )}
 
-      {CLIMAT_INDICATORS.filter(i => i.family === 'temperatures').map(({ key, label, unit }) => (
-        <ClimatRow key={key} label={label} unit={unit} proj={projMap[key] ?? EMPTY_PROJ} />
+      {CLIMAT_INDICATORS.filter(i => i.family === 'temperatures').map(({ key, label, unit, tooltip }) => (
+        <ClimatRow key={key} label={label} unit={unit} proj={projMap[key] ?? EMPTY_PROJ} tooltip={tooltip} />
       ))}
     </ClimateCard>
   );
@@ -222,8 +238,8 @@ const EauSection: React.FC<{ data: ClimatData }> = ({ data }) => {
 
   return (
     <ClimateCard title="Eau / stress hydrique" icon={Droplets}>
-      {CLIMAT_INDICATORS.filter(i => i.family === 'eau').map(({ key, label, unit }) => (
-        <ClimatRow key={key} label={label} unit={unit} proj={projMap[key] ?? EMPTY_PROJ} />
+      {CLIMAT_INDICATORS.filter(i => i.family === 'eau').map(({ key, label, unit, tooltip }) => (
+        <ClimatRow key={key} label={label} unit={unit} proj={projMap[key] ?? EMPTY_PROJ} tooltip={tooltip} />
       ))}
     </ClimateCard>
   );
@@ -262,8 +278,8 @@ const RisquesSection: React.FC<{ data?: ClimatData | null; risks: RiskDetail[]; 
         )}
       </div>
 
-      {CLIMAT_INDICATORS.filter(i => i.family === 'risques').map(({ key, label, unit }) => (
-        <ClimatRow key={key} label={label} unit={unit} proj={projMap[key] ?? EMPTY_PROJ} />
+      {CLIMAT_INDICATORS.filter(i => i.family === 'risques').map(({ key, label, unit, tooltip }) => (
+        <ClimatRow key={key} label={label} unit={unit} proj={projMap[key] ?? EMPTY_PROJ} tooltip={tooltip} />
       ))}
     </ClimateCard>
   );

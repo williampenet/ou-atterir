@@ -1,5 +1,10 @@
 import { PoliticalBloc, StabilityLevel, EquipmentDomain, EquipmentCategory, PopulationSize, RiskLevel, GeoTag, MarketTension, AirQuality, HeatWaveLevel, TransportMode, ClimateFamilyKey, ClimateWeights } from './types';
 
+export interface IndicatorTooltipContent {
+  what: string;
+  note?: string;
+}
+
 export const BLOC_COLORS: Record<string, string> = {
   [PoliticalBloc.EXTRÊME_GAUCHE]: '#b91c1c',
   [PoliticalBloc.GAUCHE]: '#ec4899',
@@ -95,15 +100,88 @@ export const HEAT_WAVE_LEVELS: Record<HeatWaveLevel, { label: string; descriptio
 };
 
 export const CLIMAT_INDICATORS = [
-  { key: 's1', label: 'Jours très chauds (≥ 35 °C)', unit: 'jours/an', description: 'T° maximale ≥ 35 °C', family: 'temperatures' as const },
-  { key: 's2', label: 'Nuits chaudes', unit: 'jours/an', description: 'T° minimale > 20 °C', family: 'temperatures' as const },
-  { key: 's4', label: 'Vagues de froid', unit: 'jours/an', description: 'Épisodes prolongés de froid', family: 'temperatures' as const },
-  { key: 's3', label: 'Sécheresse atmosphérique', unit: 'jours/an', description: 'Épisodes prolongés de chaleur jour+nuit (VPD)', family: 'eau' as const },
-  { key: 'r5Ete', label: 'Sol sec (été)', unit: 'jours', description: 'Réserve eau du sol < 40 %', family: 'eau' as const },
-  { key: 'g4Ete', label: 'Jours de pluie (été)', unit: 'jours', description: 'Cumul > 1 mm', family: 'eau' as const },
-  { key: 'r4', label: 'Risque feu de végétation', unit: 'jours/an', description: 'Jours où IFM > 40', family: 'risques' as const },
-  { key: 'r2', label: 'Précipitations extrêmes', unit: 'mm', description: 'Quantile 99,9 % (~1 fois / 3 ans)', family: 'risques' as const },
-] as const;
+  {
+    key: 's1',
+    label: 'Jours très chauds (≥ 35 °C)',
+    unit: 'jours/an',
+    description: 'T° maximale ≥ 35 °C',
+    family: 'temperatures' as const,
+    tooltip: {
+      what: "Nombre de jours par an où la température maximale atteint ou dépasse 35 °C. Chaque jour isolé compte, même sans vague de chaleur.",
+    } as IndicatorTooltipContent,
+  },
+  {
+    key: 's2',
+    label: 'Nuits chaudes',
+    unit: 'jours/an',
+    description: 'T° minimale > 20 °C',
+    family: 'temperatures' as const,
+    tooltip: {
+      what: "Nuits où la température minimale reste au-dessus de 20 °C. Sans fraîcheur nocturne, le corps ne récupère pas, ce qui aggrave la fatigue et les risques sanitaires.",
+    } as IndicatorTooltipContent,
+  },
+  {
+    key: 's4',
+    label: 'Vagues de froid',
+    unit: 'jours/an',
+    description: 'Épisodes prolongés de froid',
+    family: 'temperatures' as const,
+    tooltip: {
+      what: "Jours faisant partie d'un épisode prolongé de froid intense (durée ≥ 3 jours consécutifs). Indicateur de risque sanitaire hivernal.",
+    } as IndicatorTooltipContent,
+  },
+  {
+    key: 's3',
+    label: 'Sécheresse atmosphérique',
+    unit: 'jours/an',
+    description: 'Épisodes prolongés de chaleur jour+nuit (VPD)',
+    family: 'eau' as const,
+    tooltip: {
+      what: "Jours d'épisode de chaleur persistante jour et nuit (déficit de pression de vapeur — VPD — élevé). Plus dangereux que les jours très chauds : le corps ne récupère pas la nuit.",
+    } as IndicatorTooltipContent,
+  },
+  {
+    key: 'r5Ete',
+    label: 'Sol sec (été)',
+    unit: 'jours',
+    description: 'Réserve eau du sol < 40 %',
+    family: 'eau' as const,
+    tooltip: {
+      what: "Jours d'été où la réserve en eau du sol est inférieure à 40 % (indice SWI < 0,4). Indicateur de sécheresse pédologique, qui affecte l'agriculture et la végétation.",
+    } as IndicatorTooltipContent,
+  },
+  {
+    key: 'g4Ete',
+    label: 'Jours de pluie (été)',
+    unit: 'jours',
+    description: 'Cumul > 1 mm',
+    family: 'eau' as const,
+    tooltip: {
+      what: "Jours d'été avec des précipitations supérieures à 1 mm. Attention : ici, une baisse du nombre de jours indique une sécheresse accrue — c'est l'inverse des autres indicateurs.",
+      note: "⚠️ Pour cet indicateur, moins de jours de pluie = situation plus dégradée.",
+    } as IndicatorTooltipContent,
+  },
+  {
+    key: 'r4',
+    label: 'Risque feu de végétation',
+    unit: 'jours/an',
+    description: 'Jours où IFM > 40',
+    family: 'risques' as const,
+    tooltip: {
+      what: "Jours par an où l'Indice Forêt-Météo (IFM) dépasse le seuil 40, signalant un risque élevé d'incendie de végétation.",
+    } as IndicatorTooltipContent,
+  },
+  {
+    key: 'r2',
+    label: 'Précipitations extrêmes',
+    unit: 'mm',
+    description: 'Quantile 99,9 % (~1 fois / 3 ans)',
+    family: 'risques' as const,
+    tooltip: {
+      what: "Hauteur de pluie du 99,9e percentile local, soit un événement qui se produit environ une fois tous les 3 ans. Mesure l'intensité des épisodes pluvieux les plus extrêmes, en mm.",
+    } as IndicatorTooltipContent,
+  },
+];
 
 export const DEPARTMENT_CODES: Record<string, string> = {
   'Ain': '01', 'Aisne': '02', 'Allier': '03', 'Alpes-de-Haute-Provence': '04',
