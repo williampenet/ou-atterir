@@ -104,7 +104,7 @@ const BLOC_OPTIONS: { value: PoliticalBloc; label: string }[] = [
 // ─── Steps config ─────────────────────────────────────────────────────────────
 
 const STEPS = [
-  { title: 'Quelle est votre priorité climatique ?', subtitle: 'Le classement sera pondéré en conséquence.', required: true },
+  { title: 'À quel risque climatique êtes-vous particulièrement sensible ?', subtitle: 'Les communes les moins exposées à ce risque seront privilégiées dans le classement.', required: true },
   { title: 'Quel cadre de vie ?', subtitle: 'Plusieurs choix possibles — ou aucun si vous êtes flexible.' },
   { title: 'Taille de commune ?', subtitle: 'Plusieurs choix possibles.' },
   { title: 'Services indispensables ?', subtitle: 'Sélectionnez tout ce qui est non-négociable pour vous.' },
