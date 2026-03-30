@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   ChevronRight, ChevronLeft, Thermometer, Droplets, AlertTriangle, Wind,
-  LayoutGrid, Waves, Mountain, TreePine, Building2, Home, MapPin,
+  LayoutGrid, Waves, Mountain, Building2, Home, MapPin,
   ShoppingBag, GraduationCap, Heart, Train, Dumbbell,
   Euro, Scale, Check, Compass,
 } from 'lucide-react';
@@ -26,12 +26,14 @@ type EnvOption =
   | { type: 'size'; keys: PopulationSize[]; icon: React.ReactNode; label: string; description: string };
 
 const ENV_OPTIONS: EnvOption[] = [
+  { type: 'size', keys: ['hameau', 'village'], icon: <Home className="w-5 h-5" />, label: 'Village', description: 'Moins de 500 habitants' },
+  { type: 'size', keys: ['bourg'], icon: <Home className="w-5 h-5" />, label: 'Bourg', description: '500 – 2 000 habitants' },
+  { type: 'size', keys: ['petite_ville'], icon: <MapPin className="w-5 h-5" />, label: 'Petite ville', description: '2 000 – 10 000 habitants' },
+  { type: 'size', keys: ['ville_moyenne'], icon: <Building2 className="w-5 h-5" />, label: 'Ville moyenne', description: '10 000 – 50 000 habitants' },
+  { type: 'size', keys: ['grande_ville'], icon: <Building2 className="w-5 h-5" />, label: 'Grande ville', description: '50 000 – 200 000 habitants' },
+  { type: 'size', keys: ['metropole'], icon: <Building2 className="w-5 h-5" />, label: 'Métropole', description: 'Plus de 200 000 habitants' },
   { type: 'geo', key: 'littoral', icon: <Waves className="w-5 h-5" />, label: 'Littoral', description: 'Proche de la mer ou de l\'océan' },
   { type: 'geo', key: 'montagne', icon: <Mountain className="w-5 h-5" />, label: 'Montagne', description: 'Relief montagneux, altitude' },
-  { type: 'geo', key: 'campagne', icon: <TreePine className="w-5 h-5" />, label: 'Campagne', description: 'Rural, espaces naturels' },
-  { type: 'size', keys: ['hameau', 'village', 'bourg'], icon: <Home className="w-5 h-5" />, label: 'Village / Bourg', description: 'Moins de 2 000 habitants' },
-  { type: 'size', keys: ['petite_ville'], icon: <MapPin className="w-5 h-5" />, label: 'Petite ville', description: '2 000 – 10 000 habitants' },
-  { type: 'size', keys: ['ville_moyenne', 'grande_ville', 'metropole'], icon: <Building2 className="w-5 h-5" />, label: 'Ville', description: 'Plus de 10 000 habitants' },
 ];
 
 // Step 1 — Services
