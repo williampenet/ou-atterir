@@ -8,7 +8,8 @@ import ResultsList from './components/ResultsList';
 import CommuneDrawer from './components/CommuneDrawer';
 import CompareView from './components/CompareView';
 import ClimateWeighting from './components/ClimateWeighting';
-import OnboardingModal from './components/OnboardingModal';
+import QuestionnaireModal from './components/QuestionnaireModal';
+import type { QuestionnaireResult } from './components/QuestionnaireModal';
 import QuickFiltersBar from './components/QuickFiltersBar';
 import CommuneSearchBar from './components/CommuneSearchBar';
 
@@ -32,14 +33,21 @@ const App: React.FC = () => {
   const [climateWeights, setClimateWeights] = useState<ClimateWeights>(DEFAULT_CLIMATE_WEIGHTS);
   const [weightingPanelOpen, setWeightingPanelOpen] = useState(false);
 
-  // ─── Onboarding modal (first visit only) ───
-  const [showOnboarding, setShowOnboarding] = useState(
-    () => localStorage.getItem('hasSeenOnboarding') !== 'true'
+  // ─── Questionnaire modal (first visit only) ───
+  const [showQuestionnaire, setShowQuestionnaire] = useState(
+    () => localStorage.getItem('hasSeenQuestionnaire') !== 'true'
   );
 
-  const handleDismissOnboarding = useCallback(() => {
-    setShowOnboarding(false);
-    localStorage.setItem('hasSeenOnboarding', 'true');
+  const handleQuestionnaireComplete = useCallback((result: QuestionnaireResult) => {
+    setFilters(result.filters);
+    setClimateWeights(result.weights);
+    setShowQuestionnaire(false);
+    localStorage.setItem('hasSeenQuestionnaire', 'true');
+  }, []);
+
+  const handleQuestionnaireSkip = useCallback(() => {
+    setShowQuestionnaire(false);
+    localStorage.setItem('hasSeenQuestionnaire', 'true');
   }, []);
 
   const searchIdRef = useRef(0);
@@ -333,7 +341,11 @@ const App: React.FC = () => {
         />
       )}
 
-      <OnboardingModal open={showOnboarding} onClose={handleDismissOnboarding} />
+      <QuestionnaireModal
+        open={showQuestionnaire}
+        onComplete={handleQuestionnaireComplete}
+        onSkip={handleQuestionnaireSkip}
+      />
     </div>
   );
 };
