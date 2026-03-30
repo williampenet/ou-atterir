@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { SlidersHorizontal, X, Scale, Menu } from 'lucide-react';
+import { SlidersHorizontal, X, Scale, Menu, Compass } from 'lucide-react';
 import { searchCommunesClimateInBounds, computeWeightedScore } from './services/communeService';
 import { Commune, IdealResult, PaginatedResults, SearchFilters, ClimateWeights } from './types';
 import { DEFAULT_CLIMATE_WEIGHTS } from './constants';
@@ -8,16 +8,18 @@ import ResultsList from './components/ResultsList';
 import CommuneDrawer from './components/CommuneDrawer';
 import CompareView from './components/CompareView';
 import ClimateWeighting from './components/ClimateWeighting';
-import QuestionnaireModal from './components/QuestionnaireModal';
-import type { QuestionnaireResult } from './components/QuestionnaireModal';
+import QuestionnairePage from './components/QuestionnairePage';
+import type { QuestionnaireResult } from './components/QuestionnairePage';
 import QuickFiltersBar from './components/QuickFiltersBar';
 import CommuneSearchBar from './components/CommuneSearchBar';
 
-type AppPage = 'explorer' | 'about';
+type AppPage = 'questionnaire' | 'explorer' | 'about';
 const PAGE_SIZE = 30;
 
 const App: React.FC = () => {
-  const [activePage, setActivePage] = useState<AppPage>('explorer');
+  const [activePage, setActivePage] = useState<AppPage>(
+    () => localStorage.getItem('hasSeenQuestionnaire') === 'true' ? 'explorer' : 'questionnaire'
+  );
   const [filters, setFilters] = useState<SearchFilters>({});
   const [allResults, setAllResults] = useState<IdealResult[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -33,20 +35,15 @@ const App: React.FC = () => {
   const [climateWeights, setClimateWeights] = useState<ClimateWeights>(DEFAULT_CLIMATE_WEIGHTS);
   const [weightingPanelOpen, setWeightingPanelOpen] = useState(false);
 
-  // ─── Questionnaire modal (first visit only) ───
-  const [showQuestionnaire, setShowQuestionnaire] = useState(
-    () => localStorage.getItem('hasSeenQuestionnaire') !== 'true'
-  );
-
   const handleQuestionnaireComplete = useCallback((result: QuestionnaireResult) => {
     setFilters(result.filters);
     setClimateWeights(result.weights);
-    setShowQuestionnaire(false);
+    setActivePage('explorer');
     localStorage.setItem('hasSeenQuestionnaire', 'true');
   }, []);
 
   const handleQuestionnaireSkip = useCallback(() => {
-    setShowQuestionnaire(false);
+    setActivePage('explorer');
     localStorage.setItem('hasSeenQuestionnaire', 'true');
   }, []);
 
@@ -111,6 +108,16 @@ const App: React.FC = () => {
     (filters.populationSizes?.length ?? 0) +
     (filters.geoTags?.length ?? 0) +
     (filters.travelFilter?.insees ? 1 : 0);
+
+  // ─── Questionnaire page (full-screen, no header) ───
+  if (activePage === 'questionnaire') {
+    return (
+      <QuestionnairePage
+        onComplete={handleQuestionnaireComplete}
+        onSkip={handleQuestionnaireSkip}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-100 font-sans">
@@ -191,6 +198,12 @@ const App: React.FC = () => {
                 >
                   A propos
                 </MobileNavButton>
+                <MobileNavButton
+                  active={false}
+                  onClick={() => { setActivePage('questionnaire'); setMobileMenuOpen(false); }}
+                >
+                  Reconfigurer ma recherche
+                </MobileNavButton>
               </nav>
             </div>
           </div>
@@ -205,6 +218,13 @@ const App: React.FC = () => {
             <div className="hidden sm:flex items-center max-w-4xl mx-auto w-full px-4 py-2 gap-2">
               <QuickFiltersBar filters={filters} onFiltersChange={setFilters} />
               <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => setActivePage('questionnaire')}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 text-xs font-semibold hover:border-slate-300 hover:bg-slate-50 active:scale-95 transition-all shadow-sm"
+                >
+                  <Compass className="w-3.5 h-3.5" />
+                  Questionnaire
+                </button>
                 <button
                   onClick={() => setWeightingPanelOpen(true)}
                   className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600 active:scale-95 transition-all shadow-sm"
@@ -229,6 +249,13 @@ const App: React.FC = () => {
 
             {/* Mobile: compact filter buttons */}
             <div className="sm:hidden flex items-center justify-center gap-2 px-4 py-2">
+              <button
+                onClick={() => setActivePage('questionnaire')}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-600 shadow-sm hover:bg-slate-50 active:scale-95 transition-all"
+              >
+                <Compass className="w-3.5 h-3.5" />
+                Questionnaire
+              </button>
               <button
                 onClick={() => setWeightingPanelOpen(true)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-amber-500 text-white shadow-sm hover:bg-amber-600 active:scale-95 transition-all"
@@ -340,12 +367,6 @@ const App: React.FC = () => {
           onClose={() => setCompareOpen(false)}
         />
       )}
-
-      <QuestionnaireModal
-        open={showQuestionnaire}
-        onComplete={handleQuestionnaireComplete}
-        onSkip={handleQuestionnaireSkip}
-      />
     </div>
   );
 };
